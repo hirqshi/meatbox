@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PlayerDefinition" format=3 uid="uid://o5mu4go0v3df"]
+
+[ext_resource type="Script" uid="uid://h1wv5byfctja" path="res://gameplay/player/player_definition.gd" id="1_aosqa"]
+[ext_resource type="Script" uid="uid://dmlu0t4eyl0eh" path="res://gameplay/player/camera_projection_definition.gd" id="1_ktny1"]
+
+[sub_resource type="Resource" id="Resource_011tu"]
+script = ExtResource("1_ktny1")
+perspective_fov_deg = 80.0
+metadata/_custom_type_script = "uid://dmlu0t4eyl0eh"
+
+[resource]
+script = ExtResource("1_aosqa")
+camera_projection = SubResource("Resource_011tu")
+metadata/_custom_type_script = "uid://h1wv5byfctja"

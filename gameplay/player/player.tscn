@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://bc5rd4yu5ms2m"]
+
+[ext_resource type="Script" uid="uid://biw6kihhe8umu" path="res://gameplay/player/player.gd" id="1_011tu"]
+[ext_resource type="Resource" uid="uid://o5mu4go0v3df" path="res://data/players/default_player_definition.tres" id="2_2uk1t"]
+[ext_resource type="Script" uid="uid://cv3r1xcka7l23" path="res://gameplay/player/player_motor.gd" id="3_mo1cy"]
+[ext_resource type="Script" uid="uid://iv34mwbcjp68" path="res://gameplay/player/player_look_controller.gd" id="4_ahkyy"]
+[ext_resource type="Script" uid="uid://00qor2khbme1" path="res://gameplay/combat/player_combat.gd" id="5_2uk1t"]
+[ext_resource type="Resource" uid="uid://cdfkqifkr7ic" path="res://data/weapons/finger_gun_definition.tres" id="6_mo1cy"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e85hc"]
+
+[node name="Player" type="CharacterBody3D" unique_id=505504842]
+script = ExtResource("1_011tu")
+definition = ExtResource("2_2uk1t")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=245688374]
+shape = SubResource("CapsuleShape3D_e85hc")
+
+[node name="CameraPivot" type="Node3D" parent="." unique_id=35238968]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot" unique_id=1163109433]
+current = true
+
+[node name="PlayerMotor" type="Node" parent="." unique_id=979616820]
+script = ExtResource("3_mo1cy")
+definition = ExtResource("2_2uk1t")
+
+[node name="PlayerLookController" type="Node" parent="." unique_id=2052704846 node_paths=PackedStringArray("camera_pivot", "camera")]
+script = ExtResource("4_ahkyy")
+definition = ExtResource("2_2uk1t")
+camera_pivot = NodePath("../CameraPivot")
+camera = NodePath("../CameraPivot/Camera3D")
+
+[node name="PlayerCombat" type="Node" parent="." unique_id=62656332 node_paths=PackedStringArray("aim_camera")]
+script = ExtResource("5_2uk1t")
+finger_gun_definition = ExtResource("6_mo1cy")
+aim_camera = NodePath("../CameraPivot/Camera3D")

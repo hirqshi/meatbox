@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="RunConfig" format=3 uid="uid://c5gh7iwya331s"]
+
+[ext_resource type="Script" uid="uid://bc72jmrqfq1n8" path="res://core/config/debug_flags.gd" id="1_4ka0f"]
+[ext_resource type="Script" uid="uid://lbxvf1huaux" path="res://core/config/run_config.gd" id="1_j0xm8"]
+
+[sub_resource type="Resource" id="Resource_esgjc"]
+script = ExtResource("1_4ka0f")
+metadata/_custom_type_script = "uid://bc72jmrqfq1n8"
+
+[resource]
+script = ExtResource("1_j0xm8")
+run_seed = 1337
+debug_flags = SubResource("Resource_esgjc")
+metadata/_custom_type_script = "uid://lbxvf1huaux"
