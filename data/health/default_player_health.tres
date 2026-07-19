@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="HealthDefinition" format=3 uid="uid://cbh47ncfbf3hi"]
+
+[ext_resource type="Script" uid="uid://di2cf014xnnyr" path="res://gameplay/health/health_definition.gd" id="1_3yx56"]
+
+[resource]
+script = ExtResource("1_3yx56")
+metadata/_custom_type_script = "uid://di2cf014xnnyr"

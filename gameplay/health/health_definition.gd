@@ -1,11 +1,22 @@
-extends Node
+class_name HealthDefinition
+extends Resource
+
+@export_category("Health")
+@export_range(1.0, 100000.0, 0.1) var max_health: float = 100.0
+
+@export_category("Damage Protection")
+@export_range(0.0, 60.0, 0.01, "suffix:s") var per_source_damage_cooldown_s: float = 0.25
 
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
+func get_validation_error() -> String:
+	if max_health <= 0.0:
+		return "max_health must be greater than zero."
+
+	if per_source_damage_cooldown_s < 0.0:
+		return "per_source_damage_cooldown_s must not be negative."
+
+	return ""
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func is_valid() -> bool:
+	return get_validation_error().is_empty()

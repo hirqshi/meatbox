@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="HealthDefinition" format=3 uid="uid://cqdrile7tnofb"]
+
+[ext_resource type="Script" uid="uid://di2cf014xnnyr" path="res://gameplay/health/health_definition.gd" id="1_6ekev"]
+
+[resource]
+script = ExtResource("1_6ekev")
+max_health = 30.0
+per_source_damage_cooldown_s = 0.0
+metadata/_custom_type_script = "uid://di2cf014xnnyr"

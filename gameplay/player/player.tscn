@@ -6,6 +6,8 @@
 [ext_resource type="Script" uid="uid://iv34mwbcjp68" path="res://gameplay/player/player_look_controller.gd" id="4_ahkyy"]
 [ext_resource type="Script" uid="uid://00qor2khbme1" path="res://gameplay/combat/player_combat.gd" id="5_2uk1t"]
 [ext_resource type="Resource" uid="uid://cdfkqifkr7ic" path="res://data/weapons/finger_gun_definition.tres" id="6_mo1cy"]
+[ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="7_e85hc"]
+[ext_resource type="Resource" uid="uid://cbh47ncfbf3hi" path="res://data/health/default_player_health.tres" id="8_s4pxm"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e85hc"]
 
@@ -36,3 +38,7 @@ camera = NodePath("../CameraPivot/Camera3D")
 script = ExtResource("5_2uk1t")
 finger_gun_definition = ExtResource("6_mo1cy")
 aim_camera = NodePath("../CameraPivot/Camera3D")
+
+[node name="HealthComponent" type="Node" parent="." unique_id=1992799174]
+script = ExtResource("7_e85hc")
+definition = ExtResource("8_s4pxm")

@@ -59,8 +59,19 @@ func _find_damageable(collider: Object) -> Damageable:
 	if collider is Damageable:
 		return collider as Damageable
 
-	if collider is Node:
-		var collider_node: Node = collider as Node
-		return collider_node.get_node_or_null("Damageable") as Damageable
+	if not collider is Node:
+		return null
 
-	return null
+	var collider_node: Node = collider as Node
+	var health_component: HealthComponent = (
+		collider_node.get_node_or_null("HealthComponent") as HealthComponent
+	)
+
+	if health_component != null:
+		return health_component
+
+	var damageable: Damageable = (
+		collider_node.get_node_or_null("Damageable") as Damageable
+	)
+
+	return damageable

@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://b6joh1pf5405r"]
+
+[ext_resource type="Script" uid="uid://b01ihvhooqu1j" path="res://gameplay/enemies/enemy.gd" id="1_vwyby"]
+[ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="2_fmd88"]
+[ext_resource type="Script" uid="uid://b5m8pk7id2gwm" path="res://gameplay/enemies/enemy_brain.gd" id="3_gmro5"]
+[ext_resource type="Resource" uid="uid://cqdrile7tnofb" path="res://data/enemies/crawler_health.tres" id="3_tay03"]
+[ext_resource type="Resource" uid="uid://b4iofman3oy8q" path="res://data/enemies/crawler_definition.tres" id="5_p7lxo"]
+[ext_resource type="Texture2D" uid="uid://1q038hsxcyj8" path="res://enemytestsprite.png" id="6_tay03"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lfved"]
+radius = 0.70947266
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_6m30h"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_tay03")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tay03"]
+radius = 0.70458984
+height = 2.1098633
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_6m30h"]
+radius = 0.34423828
+height = 0.68847656
+
+[node name="Enemy" type="CharacterBody3D" unique_id=1980876339]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("1_vwyby")
+definition = ExtResource("5_p7lxo")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1660793313]
+shape = SubResource("CapsuleShape3D_lfved")
+
+[node name="HealthComponent" type="Node" parent="." unique_id=704469576]
+script = ExtResource("2_fmd88")
+definition = ExtResource("3_tay03")
+
+[node name="EnemyBrain" type="Node" parent="." unique_id=319706650]
+script = ExtResource("3_gmro5")
+definition = ExtResource("5_p7lxo")
+
+[node name="Visual" type="AnimatedSprite3D" parent="." unique_id=1203188438]
+pixel_size = 0.019
+billboard = 2
+sprite_frames = SubResource("SpriteFrames_6m30h")
+
+[node name="HurtBoxes" type="Node3D" parent="." unique_id=992708588]
+
+[node name="BodyHurtbox" type="Area3D" parent="HurtBoxes" unique_id=1589414028]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HurtBoxes/BodyHurtbox" unique_id=473144997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.037841797, 0)
+shape = SubResource("CapsuleShape3D_tay03")
+
+[node name="WeakPointHurtbox" type="Area3D" parent="HurtBoxes" unique_id=1063079704]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HurtBoxes/WeakPointHurtbox" unique_id=1477342544]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.29175797, 0)
+shape = SubResource("CapsuleShape3D_6m30h")
