@@ -50,13 +50,15 @@ func setup(body: CharacterBody3D, movement_definition: PlayerDefinition) -> void
 
 
 func set_is_enabled(value: bool) -> void:
+	if _is_enabled == value:
+		return
+
 	_is_enabled = value
 
 	if _is_enabled:
 		return
 
-	_look_roll_target_rad = 0.0
-	_look_pitch_target_rad = 0.0
+	_reset_transform()
 
 
 func register_look_delta(mouse_delta: Vector2) -> void:
@@ -124,10 +126,14 @@ func physics_update(delta: float) -> void:
 	if _body == null or _movement_definition == null or camera == null:
 		return
 
+	if not _is_enabled:
+		return
+
 	var horizontal_speed_mps: float = Vector2(
 		_body.velocity.x,
 		_body.velocity.z
 	).length()
+
 	var speed_ratio: float = clampf(
 		horizontal_speed_mps / _movement_definition.run_speed_mps,
 		0.0,
@@ -285,6 +291,29 @@ func _apply_transform() -> void:
 		_current_strafe_roll_rad + _current_look_roll_rad
 	)
 	
+	
+func _reset_transform() -> void:
+	_idle_phase = 0.0
+	_move_phase = 0.0
 
+	_current_fov_deg = _base_fov_deg
+	_current_strafe_roll_rad = 0.0
+	_current_look_roll_rad = 0.0
+	_current_look_pitch_rad = 0.0
+
+	_look_roll_target_rad = 0.0
+	_look_pitch_target_rad = 0.0
+
+	_landing_offset_y = 0.0
+	_landing_target_offset_y = 0.0
+	_landing_velocity_y = 0.0
+	_landing_bob_suppression = 0.0
+	_movement_bob_weight = 0.0
+
+	camera.fov = _base_fov_deg
+	position = Vector3.ZERO
+	rotation = Vector3.ZERO
+	
+	
 func _get_smoothing_weight(response_speed: float, delta: float) -> float:
 	return 1.0 - exp(-response_speed * delta)

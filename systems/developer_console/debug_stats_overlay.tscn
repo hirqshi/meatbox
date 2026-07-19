@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://dnr3lum7dq36p"]
+
+[ext_resource type="Script" uid="uid://blqpix0s7mkss" path="res://systems/developer_console/debug_stats_overlay.gd" id="1_5tc18"]
+[ext_resource type="FontFile" uid="uid://pe65mmym7sxj" path="res://Mansalva-Regular.ttf" id="1_dvg6u"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_c3ax1"]
+font = ExtResource("1_dvg6u")
+font_size = 23
+
+[node name="DebugStatsOverlay" type="CanvasLayer" unique_id=819110422]
+layer = 90
+script = ExtResource("1_5tc18")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1072830024]
+offset_left = 620.0
+offset_top = 889.0
+offset_right = 1247.0
+offset_bottom = 1060.0
+mouse_filter = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer" unique_id=501560645]
+layout_mode = 2
+
+[node name="StatsText" type="Label" parent="MarginContainer/PanelContainer" unique_id=1095038513]
+layout_mode = 2
+text = "Waiting for player..."
+label_settings = SubResource("LabelSettings_c3ax1")
+autowrap_mode = 3

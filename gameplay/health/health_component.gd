@@ -86,6 +86,24 @@ func restore_full_health() -> void:
 	health_changed.emit(_current_health, definition.max_health)
 
 
+func restore_health(amount: float) -> float:
+	if _is_dead or amount <= 0.0:
+		return 0.0
+
+	var restored_health: float = minf(
+		amount,
+		definition.max_health - _current_health
+	)
+
+	if restored_health <= 0.0:
+		return 0.0
+
+	_current_health += restored_health
+	health_changed.emit(_current_health, definition.max_health)
+
+	return restored_health
+	
+
 func _is_damage_blocked(damage_info: DamageInfo) -> bool:
 	if definition.per_source_damage_cooldown_s <= 0.0:
 		return false

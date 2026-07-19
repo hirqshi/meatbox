@@ -34,6 +34,9 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if DeveloperConsole.is_open():
+		return
+
 	if _health_component.is_dead():
 		return
 
@@ -43,13 +46,54 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var is_console_open: bool = DeveloperConsole.is_open()
+	_camera_juice.set_is_enabled(not is_console_open)
+
 	if _health_component.is_dead():
 		return
 
 	_motor.physics_update(delta)
+
+	if is_console_open:
+		return
+
 	_camera_juice.physics_update(delta)
 
 
+func apply_debug_damage(amount: float) -> void:
+	if amount <= 0.0:
+		return
+
+	var damage_info: DamageInfo = DamageInfo.new(
+		amount,
+		null,
+		global_position,
+		Vector3.UP,
+		Vector3.ZERO,
+		&"debug_console"
+	)
+
+	_health_component.receive_damage(damage_info)
+
+
+func restore_debug_health(amount: float) -> float:
+	return _health_component.restore_health(amount)
+
+
+func restore_full_debug_health() -> void:
+	if _health_component.is_dead():
+		return
+
+	_health_component.restore_full_health()
+
+
+func kill_for_debug() -> void:
+	if _health_component.is_dead():
+		return
+
+	apply_debug_damage(_health_component.get_current_health())
+	
+	
 func _on_health_component_died(damage_info: DamageInfo) -> void:
 	_motor.set_is_enabled(false)
 	_look_controller.set_is_enabled(false)

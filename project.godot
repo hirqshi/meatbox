@@ -20,12 +20,21 @@ config/icon="res://icon.svg"
 TimeController="*uid://cefk4a6jqqo4l"
 RunSession="*uid://bkcde36ft86ea"
 DeveloperConsole="*uid://bupd8kws5rbc7"
+DeveloperConsoleUi="*uid://covxi1kste4rx"
+DebugStatsOverlay="*uid://dnr3lum7dq36p"
 SceneFlow="*uid://co5re2i5ikq75"
 
 [display]
 
-window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=3
+window/stretch/mode="viewport"
+mouse_cursor/custom_image="uid://dt5asr6xtmhje"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GPUTrail-main/plugin.cfg")
 
 [input]
 

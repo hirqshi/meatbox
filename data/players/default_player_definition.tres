@@ -10,5 +10,6 @@ metadata/_custom_type_script = "uid://dmlu0t4eyl0eh"
 
 [resource]
 script = ExtResource("1_aosqa")
+jump_velocity_mps = 14.8
 camera_projection = SubResource("Resource_011tu")
 metadata/_custom_type_script = "uid://h1wv5byfctja"

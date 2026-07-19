@@ -74,7 +74,7 @@ func _update_jump_buffer(delta: float) -> void:
 
 func _apply_vertical_movement(delta: float) -> void:
 	if _body.is_on_floor():
-		if _jump_buffer_remaining_s > 0.0:
+		if not DeveloperConsole.is_open() and _jump_buffer_remaining_s > 0.0:
 			_body.velocity.y = definition.jump_velocity_mps
 			_jump_buffer_remaining_s = 0.0
 		elif _body.velocity.y < 0.0:
@@ -85,12 +85,15 @@ func _apply_vertical_movement(delta: float) -> void:
 
 
 func _apply_horizontal_movement(delta: float) -> void:
-	var input_vector: Vector2 = Input.get_vector(
-		&"move_left",
-		&"move_right",
-		&"move_forward",
-		&"move_backward"
-	)
+	var input_vector: Vector2 = Vector2.ZERO
+
+	if not DeveloperConsole.is_open():
+		input_vector = Input.get_vector(
+			&"move_left",
+			&"move_right",
+			&"move_forward",
+			&"move_backward"
+		)
 
 	var local_direction: Vector3 = Vector3(
 		input_vector.x,

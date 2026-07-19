@@ -32,7 +32,7 @@ height = 0.68847656
 
 [node name="Enemy" type="CharacterBody3D" unique_id=1980876339]
 collision_layer = 64
-collision_mask = 131
+collision_mask = 195
 script = ExtResource("1_vwyby")
 definition = ExtResource("5_p7lxo")
 
