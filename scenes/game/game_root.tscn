@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dlb3xwn40bs76" path="res://scenes/game/game_root.gd" id="1_dw3h0"]
 [ext_resource type="Resource" uid="uid://c5gh7iwya331s" path="res://data/runs/debug_sandbox_run.tres" id="2_esgjc"]
 [ext_resource type="Texture2D" uid="uid://bqr4dt31h4i3b" path="res://assets/placeholder/sprites/tile4.png" id="3_0krdv"]
+[ext_resource type="Resource" uid="uid://cgygtwfc4hn66" path="res://gameplay/interactions/pickups/definitions/health_pickup.tres" id="3_elccf"]
 [ext_resource type="Script" uid="uid://dq4kuo36pj5ui" path="res://debug/combat_target.gd" id="3_pevc5"]
 [ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="4_0krdv"]
 [ext_resource type="Resource" uid="uid://1nvkpj6eueh3" path="res://data/enemies/combat_target_health.tres" id="4_bca70"]
@@ -32,6 +33,7 @@ material = SubResource("StandardMaterial3D_rx5uh")
 [node name="GameRoot" type="Node" unique_id=824725833]
 script = ExtResource("1_dw3h0")
 default_run_config = ExtResource("2_esgjc")
+health_pickup_definition = ExtResource("3_elccf")
 
 [node name="WorldRoot" type="Node3D" parent="." unique_id=2101649433]
 

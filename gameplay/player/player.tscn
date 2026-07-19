@@ -10,8 +10,13 @@
 [ext_resource type="Resource" uid="uid://cdfkqifkr7ic" path="res://data/weapons/finger_gun_definition.tres" id="6_mo1cy"]
 [ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="7_e85hc"]
 [ext_resource type="Resource" uid="uid://cbh47ncfbf3hi" path="res://data/health/default_player_health.tres" id="8_s4pxm"]
+[ext_resource type="Script" uid="uid://c855flukj7gf0" path="res://gameplay/interactions/player_interactor.gd" id="11_d14h3"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e85hc"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_6m30h"]
+height = 3.5
+radius = 2.0
 
 [node name="Player" type="CharacterBody3D" unique_id=505504842]
 collision_mask = 193
@@ -51,3 +56,11 @@ aim_camera = NodePath("../CameraPivot/CameraJuiceOffset/Camera3D")
 [node name="HealthComponent" type="Node" parent="." unique_id=1992799174]
 script = ExtResource("7_e85hc")
 definition = ExtResource("8_s4pxm")
+
+[node name="PlayerInteractor" type="Area3D" parent="." unique_id=1946670095]
+collision_layer = 256
+collision_mask = 16
+script = ExtResource("11_d14h3")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerInteractor" unique_id=1834410716]
+shape = SubResource("CylinderShape3D_6m30h")

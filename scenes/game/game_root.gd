@@ -2,9 +2,13 @@ extends Node
 
 const PLAYER_SCENE: PackedScene = preload("res://gameplay/player/player.tscn")
 const ENEMY_SCENE: PackedScene = preload("res://gameplay/enemies/enemy.tscn")
+const WORLD_PICKUP_SCENE: PackedScene = preload(
+	"res://gameplay/interactions/pickups/world_pickup.tscn"
+)
 
 @export var enemy_spawn_position: Vector3 = Vector3(0.0, 1.0, -10.0)
 @export var default_run_config: RunConfig
+@export var health_pickup_definition: HealthPickupDefinition
 @export var player_spawn_position: Vector3 = Vector3(0.0, 3.0, 0.0)
 
 @onready var _gameplay_root: Node = $GameplayRoot
@@ -19,7 +23,19 @@ func _ready() -> void:
 	DeveloperConsole.log_info(
 		"GameRoot ready. Seed: %d" % default_run_config.run_seed
 	)
-
+	assert(
+		health_pickup_definition != null,
+		"GameRoot requires a HealthPickupDefinition."
+	)
+	assert(
+		health_pickup_definition.is_valid(),
+		"Invalid health pickup definition '%s': %s"
+		% [
+			health_pickup_definition.resource_path,
+			health_pickup_definition.get_validation_error(),
+		]
+	)
+	
 	if not RunSession.is_run_active():
 		RunSession.start_run(default_run_config)
 
@@ -63,7 +79,12 @@ func _register_debug_commands() -> void:
 		"Usage: clear_enemies. Removes all active enemies.",
 		_clear_enemies_from_console
 	)
-
+	DeveloperConsole.register_command(
+		&"spawn_health",
+		"Usage: spawn_health <amount>.",
+		_spawn_health_from_console
+	)
+	
 
 func _unregister_debug_commands() -> void:
 	DeveloperConsole.unregister_command(
@@ -90,7 +111,11 @@ func _unregister_debug_commands() -> void:
 		&"clear_enemies",
 		_clear_enemies_from_console
 	)
-
+	DeveloperConsole.unregister_command(
+		&"spawn_health",
+		_spawn_health_from_console
+	)
+	
 
 func _spawn_player() -> CharacterBody3D:
 	var player: CharacterBody3D = PLAYER_SCENE.instantiate() as CharacterBody3D
@@ -262,6 +287,71 @@ func _clear_active_enemies() -> void:
 
 	_active_enemies.clear()
 
+
+func _spawn_health_from_console(arguments: PackedStringArray) -> void:
+	if arguments.size() != 1:
+		DeveloperConsole.log_error("Usage: spawn_health <amount>.")
+		return
+
+	var amount: float = _parse_positive_amount(
+		arguments[0],
+		"Health amount"
+	)
+
+	if amount <= 0.0:
+		return
+
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var spawn_position: Vector3 = (
+		player.global_position
+		+ player.global_transform.basis.z * -2.0
+		+ Vector3.UP * 2.0
+	)
+
+	var pickup: WorldPickup = _spawn_pickup(
+		HealthPickupPayload.new(
+			health_pickup_definition,
+			amount
+		),
+		spawn_position,
+		player
+	)
+
+	DeveloperConsole.log_info(
+		"Spawned health pickup for %.1f HP at %.1f, %.1f, %.1f."
+		% [
+			amount,
+			pickup.global_position.x,
+			pickup.global_position.y,
+			pickup.global_position.z,
+		]
+	)
+
+
+func _spawn_pickup(
+	payload: PickupPayload,
+	spawn_position: Vector3,
+	player: Node3D
+) -> WorldPickup:
+	var pickup: WorldPickup = (
+		WORLD_PICKUP_SCENE.instantiate() as WorldPickup
+	)
+
+	assert(
+		pickup != null,
+		"WorldPickup scene root must inherit WorldPickup."
+	)
+
+	pickup.setup(payload, player)
+	_gameplay_root.add_child(pickup)
+	pickup.global_position = spawn_position
+
+	return pickup
+	
 
 func _on_enemy_died(
 	enemy: CharacterBody3D,

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="MEATBOX"
-run/main_scene="uid://7tb6ts2fb4j6"
+run/main_scene="uid://du5kpaksq8dkq"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/placeholder/sprites/icon.svg"
 
@@ -29,7 +29,7 @@ SceneFlow="*uid://co5re2i5ikq75"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/mode=3
-window/stretch/mode="viewport"
+window/stretch/mode="canvas_items"
 mouse_cursor/custom_image="uid://dt5asr6xtmhje"
 
 [editor_plugins]
@@ -109,6 +109,7 @@ quit_run={
 3d_physics/layer_6="projectile"
 3d_physics/layer_7="enemy_body"
 3d_physics/layer_8="solid_prop"
+3d_physics/layer_9="player_interactor"
 
 [physics]
 

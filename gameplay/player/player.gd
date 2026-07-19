@@ -10,6 +10,7 @@ signal player_died(damage_info: DamageInfo)
 @onready var _combat: PlayerCombat = $PlayerCombat
 @onready var _health_component: HealthComponent = $HealthComponent
 @onready var _camera_juice: CameraJuiceComponent = $CameraPivot/CameraJuiceOffset
+@onready var _interactor: PlayerInteractor = $PlayerInteractor
 
 
 func _ready() -> void:
@@ -24,7 +25,11 @@ func _ready() -> void:
 	_camera_juice.setup(self, definition)
 	_motor.landed.connect(_camera_juice.register_landing)
 	_combat.setup(self)
-
+	_interactor.setup(self)
+	_interactor.interactable_entered.connect(
+		_on_interactable_entered
+	)
+	
 	_health_component.died.connect(_on_health_component_died)
 	_health_component.health_changed.connect(_on_health_changed)
 	_health_component.damaged.connect(_on_health_component_damaged)
@@ -135,3 +140,12 @@ func _on_damage_blocked(damage_info: DamageInfo) -> void:
 		"Player damage blocked from %s."
 		% _get_damage_source_name(damage_info.source)
 	)
+
+
+func _on_interactable_entered(
+	interactable: WorldInteractable
+) -> void:
+	if not interactable.is_auto_interaction_enabled:
+		return
+
+	interactable.try_interact(_interactor.get_receiver())
