@@ -1,3 +1,28 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# godot 4 editor cache and imported assets
+.godot/
+
+# exported builds
+exports/
+export/
+
+# mono / c# build artifacts, harmless for gdscript projects
+.mono/
+data_*/
+
+# os files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ide/editor config
+.vscode/
+.idea/
+
+# logs and temporary files
+*.log
+*.tmp
+*.bak
