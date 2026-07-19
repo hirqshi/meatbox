@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://covxi1kste4rx"]
 
 [ext_resource type="Script" uid="uid://cjm2mytcioevw" path="res://systems/developer_console/developer_console_ui.gd" id="1_0vaki"]
-[ext_resource type="FontFile" uid="uid://80t7lj2j057e" path="res://FreckleFace-Regular.ttf" id="2_1ihp2"]
+[ext_resource type="FontFile" uid="uid://80t7lj2j057e" path="res://assets/placeholder/fonts/FreckleFace-Regular.ttf" id="2_1ihp2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0vaki"]
 content_margin_left = 0.0

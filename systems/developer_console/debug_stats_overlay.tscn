@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dnr3lum7dq36p"]
 
 [ext_resource type="Script" uid="uid://blqpix0s7mkss" path="res://systems/developer_console/debug_stats_overlay.gd" id="1_5tc18"]
-[ext_resource type="FontFile" uid="uid://pe65mmym7sxj" path="res://Mansalva-Regular.ttf" id="1_dvg6u"]
+[ext_resource type="FontFile" uid="uid://pe65mmym7sxj" path="res://assets/placeholder/fonts/Mansalva-Regular.ttf" id="1_dvg6u"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_c3ax1"]
 font = ExtResource("1_dvg6u")

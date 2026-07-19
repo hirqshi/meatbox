@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://b5m8pk7id2gwm" path="res://gameplay/enemies/enemy_brain.gd" id="3_gmro5"]
 [ext_resource type="Resource" uid="uid://cqdrile7tnofb" path="res://data/enemies/crawler_health.tres" id="3_tay03"]
 [ext_resource type="Resource" uid="uid://b4iofman3oy8q" path="res://data/enemies/crawler_definition.tres" id="5_p7lxo"]
-[ext_resource type="Texture2D" uid="uid://1q038hsxcyj8" path="res://enemytestsprite.png" id="6_tay03"]
+[ext_resource type="Texture2D" uid="uid://1q038hsxcyj8" path="res://assets/placeholder/sprites/enemytestsprite.png" id="6_tay03"]
 [ext_resource type="Script" uid="uid://bkdiiix2ra714" path="res://core/combat/hurtbox_component.gd" id="7_p7lxo"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lfved"]
