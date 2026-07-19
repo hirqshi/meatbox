@@ -13,7 +13,9 @@ extends Resource
 
 @export_category("Targeting")
 @export_range(0.0, 500.0, 0.1, "suffix:m") var detection_range_m: float = 30.0
-@export_range(0.0, 20.0, 0.01, "suffix:m") var contact_range_m: float = 1.2
+@export_range(0.01, 20.0, 0.01, "suffix:m") var body_radius_m: float = 0.45
+@export_range(0.01, 20.0, 0.01, "suffix:m") var target_body_radius_m: float = 0.4
+@export_range(0.0, 20.0, 0.01, "suffix:m") var attack_reach_m: float = 0.7
 
 @export_category("Contact Attack")
 @export_range(0.0, 100000.0, 0.1, "suffix:damage") var contact_damage: float = 10.0
@@ -42,11 +44,17 @@ func get_validation_error() -> String:
 	if detection_range_m <= 0.0:
 		return "detection_range_m must be greater than zero."
 
-	if contact_range_m <= 0.0:
-		return "contact_range_m must be greater than zero."
+	if body_radius_m <= 0.0:
+		return "body_radius_m must be greater than zero."
 
-	if contact_range_m > detection_range_m:
-		return "contact_range_m must not exceed detection_range_m."
+	if target_body_radius_m <= 0.0:
+		return "target_body_radius_m must be greater than zero."
+
+	if attack_reach_m < 0.0:
+		return "attack_reach_m must not be negative."
+
+	if get_contact_range_m() > detection_range_m:
+		return "contact range must not exceed detection_range_m."
 
 	if contact_damage <= 0.0:
 		return "contact_damage must be greater than zero."
@@ -59,3 +67,7 @@ func get_validation_error() -> String:
 
 func is_valid() -> bool:
 	return get_validation_error().is_empty()
+
+
+func get_contact_range_m() -> float:
+	return body_radius_m + target_body_radius_m + attack_reach_m

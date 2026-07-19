@@ -60,7 +60,7 @@ func physics_update(delta: float) -> void:
 		_body.move_and_slide()
 		return
 
-	if distance_to_target_m <= definition.contact_range_m:
+	if distance_to_target_m <= definition.get_contact_range_m():
 		_stop_horizontal_movement(delta)
 		_try_contact_attack()
 	else:

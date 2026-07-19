@@ -1,6 +1,8 @@
 class_name HitscanFireExecutor
 extends RefCounted
 
+const MAX_RAY_HITS: int = 16
+
 signal shot_resolved(
 	request: FireRequest,
 	hit_position: Vector3,
@@ -15,63 +17,81 @@ func fire(request: FireRequest) -> void:
 
 	var weapon_definition: WeaponDefinition = request.weapon.definition
 	var ray_end: Vector3 = request.origin + request.direction * weapon_definition.range_m
-
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
-		request.origin,
-		ray_end,
-		weapon_definition.hit_collision_mask,
-		[request.source.get_rid()]
-	)
-	query.collide_with_bodies = true
-	query.collide_with_areas = true
-
 	var space_state: PhysicsDirectSpaceState3D = (
 		request.source.get_world_3d().direct_space_state
 	)
-	var result: Dictionary = space_state.intersect_ray(query)
 
-	if result.is_empty():
-		shot_resolved.emit(request, ray_end, false)
+	var excluded_rids: Array[RID] = [request.source.get_rid()]
+	var selected_hurtbox: HurtboxComponent
+	var selected_hit_position: Vector3 = ray_end
+	var selected_hit_normal: Vector3 = Vector3.UP
+	var selected_damage_multiplier: float = 0.0
+	var selected_damageable: Damageable
+	var fallback_hit_position: Vector3 = ray_end
+
+	for hit_index: int in MAX_RAY_HITS:
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
+			request.origin,
+			ray_end,
+			weapon_definition.hit_collision_mask,
+			excluded_rids
+		)
+		query.collide_with_bodies = true
+		query.collide_with_areas = true
+
+		var result: Dictionary = space_state.intersect_ray(query)
+
+		if result.is_empty():
+			break
+
+		var hit_position: Vector3 = result.get("position", ray_end) as Vector3
+		var hit_normal: Vector3 = result.get("normal", Vector3.UP) as Vector3
+		var hit_rid: RID = result.get("rid", RID()) as RID
+		var collider: Object = result.get("collider") as Object
+
+		fallback_hit_position = hit_position
+
+		if collider is not HurtboxComponent:
+			break
+
+		var hurtbox: HurtboxComponent = collider as HurtboxComponent
+
+		if hurtbox.damageable == null:
+			push_error(
+				"Hurtbox '%s' has no Damageable target."
+				% hurtbox.get_path()
+			)
+			break
+
+		if selected_damageable != null and hurtbox.damageable != selected_damageable:
+			break
+
+		if hurtbox.damage_multiplier > selected_damage_multiplier:
+			selected_hurtbox = hurtbox
+			selected_hit_position = hit_position
+			selected_hit_normal = hit_normal
+			selected_damage_multiplier = hurtbox.damage_multiplier
+			selected_damageable = hurtbox.damageable
+
+		excluded_rids.append(hit_rid)
+
+	if selected_hurtbox == null or selected_damageable == null:
+		shot_resolved.emit(request, fallback_hit_position, false)
 		return
 
-	var hit_position: Vector3 = result.get("position", ray_end) as Vector3
-	var hit_normal: Vector3 = result.get("normal", Vector3.UP) as Vector3
-	var collider: Object = result.get("collider") as Object
-	var damageable: Damageable = _find_damageable(collider)
-
-	if damageable == null:
-		shot_resolved.emit(request, hit_position, false)
-		return
-
-	var damage_info: DamageInfo = DamageInfo.new(
+	var base_damage_info: DamageInfo = DamageInfo.new(
 		weapon_definition.damage,
 		request.source,
-		hit_position,
-		hit_normal,
+		selected_hit_position,
+		selected_hit_normal,
 		request.direction,
 		weapon_definition.weapon_id
 	)
-	damageable.receive_damage(damage_info)
-	shot_resolved.emit(request, hit_position, true)
-
-
-func _find_damageable(collider: Object) -> Damageable:
-	if collider is Damageable:
-		return collider as Damageable
-
-	if not collider is Node:
-		return null
-
-	var collider_node: Node = collider as Node
-	var health_component: HealthComponent = (
-		collider_node.get_node_or_null("HealthComponent") as HealthComponent
+	var modified_damage_info: DamageInfo = selected_hurtbox.create_damage_info(
+		base_damage_info,
+		selected_hit_position,
+		selected_hit_normal
 	)
 
-	if health_component != null:
-		return health_component
-
-	var damageable: Damageable = (
-		collider_node.get_node_or_null("Damageable") as Damageable
-	)
-
-	return damageable
+	selected_damageable.receive_damage(modified_damage_info)
+	shot_resolved.emit(request, selected_hit_position, true)

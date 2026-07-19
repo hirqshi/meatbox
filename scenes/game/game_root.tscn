@@ -3,6 +3,9 @@
 [ext_resource type="Script" uid="uid://dlb3xwn40bs76" path="res://scenes/game/game_root.gd" id="1_dw3h0"]
 [ext_resource type="Resource" uid="uid://c5gh7iwya331s" path="res://data/runs/debug_sandbox_run.tres" id="2_esgjc"]
 [ext_resource type="Script" uid="uid://dq4kuo36pj5ui" path="res://debug/combat_target.gd" id="3_pevc5"]
+[ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="4_0krdv"]
+[ext_resource type="Resource" uid="uid://1nvkpj6eueh3" path="res://data/enemies/combat_target_health.tres" id="4_bca70"]
+[ext_resource type="Script" uid="uid://bkdiiix2ra714" path="res://core/combat/hurtbox_component.gd" id="4_n6w2t"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_esgjc"]
 albedo_color = Color(0.32, 0.112, 0.112, 1)
@@ -49,7 +52,9 @@ environment = SubResource("Environment_esgjc")
 
 [node name="CombatTarget" type="StaticBody3D" parent="WorldRoot" unique_id=586585236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.9736085, 1.0034802, 7.5962152)
-collision_layer = 4
+collision_layer = 128
+collision_mask = 66
+script = ExtResource("3_pevc5")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="WorldRoot/CombatTarget" unique_id=1918228704]
 mesh = SubResource("CylinderMesh_6m30h")
@@ -57,8 +62,19 @@ mesh = SubResource("CylinderMesh_6m30h")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="WorldRoot/CombatTarget" unique_id=2049212682]
 shape = SubResource("CylinderShape3D_6m30h")
 
-[node name="Damageable" type="Node" parent="WorldRoot/CombatTarget" unique_id=221876334]
-script = ExtResource("3_pevc5")
+[node name="HealthComponent" type="Node" parent="WorldRoot/CombatTarget" unique_id=309947059]
+script = ExtResource("4_0krdv")
+definition = ExtResource("4_bca70")
+
+[node name="Hurtbox" type="Area3D" parent="WorldRoot/CombatTarget" unique_id=1389780861 node_paths=PackedStringArray("damageable")]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+script = ExtResource("4_n6w2t")
+damageable = NodePath("../HealthComponent")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WorldRoot/CombatTarget/Hurtbox" unique_id=1273076815]
+shape = SubResource("CylinderShape3D_6m30h")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldRoot" unique_id=2133213819]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 11.368366, 0)

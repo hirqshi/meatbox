@@ -12,6 +12,7 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e85hc"]
 
 [node name="Player" type="CharacterBody3D" unique_id=505504842]
+collision_mask = 193
 script = ExtResource("1_011tu")
 definition = ExtResource("2_2uk1t")
 

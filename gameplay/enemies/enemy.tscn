@@ -6,6 +6,7 @@
 [ext_resource type="Resource" uid="uid://cqdrile7tnofb" path="res://data/enemies/crawler_health.tres" id="3_tay03"]
 [ext_resource type="Resource" uid="uid://b4iofman3oy8q" path="res://data/enemies/crawler_definition.tres" id="5_p7lxo"]
 [ext_resource type="Texture2D" uid="uid://1q038hsxcyj8" path="res://enemytestsprite.png" id="6_tay03"]
+[ext_resource type="Script" uid="uid://bkdiiix2ra714" path="res://core/combat/hurtbox_component.gd" id="7_p7lxo"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lfved"]
 radius = 0.70947266
@@ -30,8 +31,8 @@ radius = 0.34423828
 height = 0.68847656
 
 [node name="Enemy" type="CharacterBody3D" unique_id=1980876339]
-collision_layer = 4
-collision_mask = 3
+collision_layer = 64
+collision_mask = 131
 script = ExtResource("1_vwyby")
 definition = ExtResource("5_p7lxo")
 
@@ -48,19 +49,30 @@ definition = ExtResource("5_p7lxo")
 
 [node name="Visual" type="AnimatedSprite3D" parent="." unique_id=1203188438]
 pixel_size = 0.019
-billboard = 2
 sprite_frames = SubResource("SpriteFrames_6m30h")
 
-[node name="HurtBoxes" type="Node3D" parent="." unique_id=992708588]
+[node name="Hurtboxes" type="Node3D" parent="." unique_id=992708588]
 
-[node name="BodyHurtbox" type="Area3D" parent="HurtBoxes" unique_id=1589414028]
+[node name="BodyHurtbox" type="Area3D" parent="Hurtboxes" unique_id=1589414028 node_paths=PackedStringArray("damageable")]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+script = ExtResource("7_p7lxo")
+damageable = NodePath("../../HealthComponent")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="HurtBoxes/BodyHurtbox" unique_id=473144997]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtboxes/BodyHurtbox" unique_id=473144997]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.037841797, 0)
 shape = SubResource("CapsuleShape3D_tay03")
 
-[node name="WeakPointHurtbox" type="Area3D" parent="HurtBoxes" unique_id=1063079704]
+[node name="WeakPointHurtbox" type="Area3D" parent="Hurtboxes" unique_id=1063079704 node_paths=PackedStringArray("damageable")]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+script = ExtResource("7_p7lxo")
+damageable = NodePath("../../HealthComponent")
+damage_part_id = &"weak_point"
+damage_multiplier = 2.0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="HurtBoxes/WeakPointHurtbox" unique_id=1477342544]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtboxes/WeakPointHurtbox" unique_id=1477342544]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.29175797, 0)
 shape = SubResource("CapsuleShape3D_6m30h")

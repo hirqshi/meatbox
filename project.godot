@@ -98,6 +98,8 @@ quit_run={
 3d_physics/layer_4="player_hurtbox"
 3d_physics/layer_5="interactable"
 3d_physics/layer_6="projectile"
+3d_physics/layer_7="enemy_body"
+3d_physics/layer_8="solid_prop"
 
 [physics]
 
