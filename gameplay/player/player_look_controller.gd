@@ -4,6 +4,7 @@ extends Node
 @export var definition: PlayerDefinition
 @export var camera_pivot: Node3D
 @export var camera: Camera3D
+@export var camera_juice: CameraJuiceComponent
 
 var _body: CharacterBody3D
 var _is_enabled: bool = true
@@ -16,6 +17,10 @@ func setup(body: CharacterBody3D) -> void:
 	assert(definition != null, "PlayerLookController requires a PlayerDefinition.")
 	assert(camera_pivot != null, "PlayerLookController requires a camera pivot.")
 	assert(camera != null, "PlayerLookController requires a Camera3D.")
+	assert(
+	camera_juice != null,
+	"PlayerLookController requires a CameraJuiceComponent."
+	)
 	assert(definition.camera_projection != null, "PlayerDefinition requires a camera projection.")
 
 	_body = body
@@ -47,6 +52,8 @@ func handle_input(event: InputEvent) -> void:
 
 
 func _apply_mouse_look(mouse_delta: Vector2) -> void:
+	camera_juice.register_look_delta(mouse_delta)
+	
 	var yaw_delta: float = -mouse_delta.x * definition.mouse_sensitivity
 	var pitch_delta: float = -mouse_delta.y * definition.mouse_sensitivity
 	var pitch_limit_radians: float = deg_to_rad(definition.pitch_limit_deg)

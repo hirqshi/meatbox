@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dlb3xwn40bs76" path="res://scenes/game/game_root.gd" id="1_dw3h0"]
 [ext_resource type="Resource" uid="uid://c5gh7iwya331s" path="res://data/runs/debug_sandbox_run.tres" id="2_esgjc"]
+[ext_resource type="Texture2D" uid="uid://diiukxv4o6fki" path="res://icon.svg" id="3_0krdv"]
 [ext_resource type="Script" uid="uid://dq4kuo36pj5ui" path="res://debug/combat_target.gd" id="3_pevc5"]
 [ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="4_0krdv"]
 [ext_resource type="Resource" uid="uid://1nvkpj6eueh3" path="res://data/enemies/combat_target_health.tres" id="4_bca70"]
@@ -9,6 +10,8 @@
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_esgjc"]
 albedo_color = Color(0.32, 0.112, 0.112, 1)
+albedo_texture = ExtResource("3_0krdv")
+uv1_scale = Vector3(28.705, 28.705, 28.705)
 
 [sub_resource type="BoxMesh" id="BoxMesh_6m30h"]
 material = SubResource("StandardMaterial3D_esgjc")

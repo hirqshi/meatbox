@@ -1,10 +1,17 @@
 class_name PlayerMotor
 extends Node
 
+signal landed(
+	fall_speed_mps: float,
+	horizontal_speed_mps: float
+)
+
 @export var definition: PlayerDefinition
 
 var _body: CharacterBody3D
 var _is_enabled: bool = true
+var _was_on_floor: bool = false
+var _jump_buffer_remaining_s: float = 0.0
 
 
 func setup(body: CharacterBody3D) -> void:
@@ -13,6 +20,7 @@ func setup(body: CharacterBody3D) -> void:
 	assert(definition.validate(), "PlayerDefinition contains invalid values.")
 
 	_body = body
+	_was_on_floor = _body.is_on_floor()
 
 
 func set_is_enabled(value: bool) -> void:
@@ -20,21 +28,55 @@ func set_is_enabled(value: bool) -> void:
 
 	if not _is_enabled and _body != null:
 		_body.velocity = Vector3.ZERO
+		_jump_buffer_remaining_s = 0.0
+
+
+func handle_input(event: InputEvent) -> void:
+	if not _is_enabled or definition == null:
+		return
+
+	if event.is_action_pressed(&"jump"):
+		_jump_buffer_remaining_s = definition.jump_buffer_duration_s
 
 
 func physics_update(delta: float) -> void:
 	if not _is_enabled or _body == null or definition == null:
 		return
 
+	var vertical_speed_before_move_mps: float = _body.velocity.y
+
+	_update_jump_buffer(delta)
 	_apply_vertical_movement(delta)
 	_apply_horizontal_movement(delta)
+	var horizontal_speed_before_move_mps: float = Vector2(
+	_body.velocity.x,
+	_body.velocity.z
+	).length()
 	_body.move_and_slide()
+
+	var has_landed: bool = not _was_on_floor and _body.is_on_floor()
+
+	if has_landed:
+		landed.emit(
+		maxf(-vertical_speed_before_move_mps, 0.0),
+		horizontal_speed_before_move_mps
+		)
+
+	_was_on_floor = _body.is_on_floor()
+
+
+func _update_jump_buffer(delta: float) -> void:
+	_jump_buffer_remaining_s = maxf(
+		_jump_buffer_remaining_s - delta,
+		0.0
+	)
 
 
 func _apply_vertical_movement(delta: float) -> void:
 	if _body.is_on_floor():
-		if Input.is_action_just_pressed(&"jump"):
+		if _jump_buffer_remaining_s > 0.0:
 			_body.velocity.y = definition.jump_velocity_mps
+			_jump_buffer_remaining_s = 0.0
 		elif _body.velocity.y < 0.0:
 			_body.velocity.y = -definition.ground_stick_velocity_mps
 		return

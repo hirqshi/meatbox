@@ -9,6 +9,7 @@ signal player_died(damage_info: DamageInfo)
 @onready var _look_controller: PlayerLookController = $PlayerLookController
 @onready var _combat: PlayerCombat = $PlayerCombat
 @onready var _health_component: HealthComponent = $HealthComponent
+@onready var _camera_juice: CameraJuiceComponent = $CameraPivot/CameraJuiceOffset
 
 
 func _ready() -> void:
@@ -20,6 +21,8 @@ func _ready() -> void:
 
 	_motor.setup(self)
 	_look_controller.setup(self)
+	_camera_juice.setup(self, definition)
+	_motor.landed.connect(_camera_juice.register_landing)
 	_combat.setup(self)
 
 	_health_component.died.connect(_on_health_component_died)
@@ -34,6 +37,7 @@ func _input(event: InputEvent) -> void:
 	if _health_component.is_dead():
 		return
 
+	_motor.handle_input(event)
 	_look_controller.handle_input(event)
 	_combat.handle_input(event)
 
@@ -43,13 +47,15 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_motor.physics_update(delta)
+	_camera_juice.physics_update(delta)
 
 
 func _on_health_component_died(damage_info: DamageInfo) -> void:
 	_motor.set_is_enabled(false)
 	_look_controller.set_is_enabled(false)
 	_combat.set_is_enabled(false)
-
+	_camera_juice.set_is_enabled(false)
+	
 	DeveloperConsole.log_info(
 		"Player died. Source: %s"
 		% _get_damage_source_name(damage_info.source)

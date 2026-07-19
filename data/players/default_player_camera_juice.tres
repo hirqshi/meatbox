@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CameraJuiceDefinition" format=3 uid="uid://bdpwhef5vej4t"]
+
+[ext_resource type="Script" uid="uid://ci0qlpb3hp4ui" path="res://gameplay/player/camera_juice_definition.gd" id="1_1lexp"]
+
+[resource]
+script = ExtResource("1_1lexp")
+max_speed_fov_bonus_deg = 12.0
+airborne_fov_bonus_deg = 5.0
+idle_bob_horizontal_m = 0.041
+idle_bob_vertical_m = 0.05
+idle_bob_frequency_hz = 0.17
+move_bob_horizontal_m = 0.228
+move_bob_vertical_m = 0.199
+move_bob_base_frequency_hz = 0.84
+move_bob_speed_frequency_hz = 1.58
+yaw_inertia_roll_deg = 1.63
+pitch_inertia_pitch_deg = 1.07
+landing_offset_m = 1.917
+landing_spring_strength = 81.7
+landing_spring_damping = 8.8
+landing_impact_response_speed = 29.400000000000002
+landing_bob_suppression = 1.0
+landing_bob_restore_speed = 0.6
+landing_run_offset_multiplier = 4.0
+landing_run_bob_suppression_bonus = 1.0
+metadata/_custom_type_script = "uid://ci0qlpb3hp4ui"

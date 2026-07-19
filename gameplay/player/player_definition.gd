@@ -8,6 +8,7 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var air_control_multiplier: float = 0.45
 @export_range(0.0, 500.0, 0.1, "suffix:m/s²") var gravity_mps2: float = 35.0
 @export_range(0.0, 100.0, 0.1, "suffix:m/s") var jump_velocity_mps: float = 11.0
+@export_range(0.0, 0.5, 0.01, "suffix:s") var jump_buffer_duration_s: float = 0.12
 @export_range(0.0, 1.0, 0.01) var ground_stick_velocity_mps: float = 0.5
 
 @export_category("Camera")
@@ -24,7 +25,10 @@ extends Resource
 func validate() -> bool:
 	if run_speed_mps <= 0.0:
 		return false
-
+		
+	if jump_buffer_duration_s < 0.0:
+		return false
+		
 	if capsule_radius_m <= 0.0:
 		return false
 
