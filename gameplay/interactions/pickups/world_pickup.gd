@@ -1,6 +1,10 @@
 class_name WorldPickup
 extends Node3D
 
+const RARITY_CATALOG: RarityCatalog = preload(
+	"res://data/items/rarity_catalog.tres"
+)
+
 signal collection_started(
 	pickup: WorldPickup,
 	payload: PickupPayload
@@ -77,6 +81,35 @@ enum State {
 	"suffix:1/s"
 ) var face_lerp_speed: float = 12.0
 
+@export_category("Outline")
+@export_range(0.0, 1.0, 0.01)
+var distant_outline_alpha: float = 0.22
+
+@export_range(0.0, 1.0, 0.01)
+var distant_outline_saturation: float = 0.35
+
+@export_range(0.0, 1.0, 0.01)
+var near_outline_alpha: float = 0.6
+
+@export_range(0.0, 1.0, 0.01)
+var near_outline_saturation: float = 0.7
+
+@export_range(0.0, 1.0, 0.01)
+var aimed_outline_alpha: float = 1.0
+
+@export_range(0.0, 1.0, 0.01)
+var aimed_outline_saturation: float = 1.0
+
+@export_range(
+	0.0,
+	20.0,
+	0.01,
+	"suffix:Hz"
+) var outline_pulse_frequency_hz: float = 1.8
+
+@export_range(0.0, 1.0, 0.01)
+var outline_pulse_alpha_strength: float = 0.22
+
 @export_category("Collection")
 @export_range(
 	0.01,
@@ -95,6 +128,10 @@ enum State {
 @onready var _interaction_area: PickupInteractionArea = $InteractionArea
 @onready var _visual_root: Node3D = $VisualRoot
 @onready var _visual: AnimatedSprite3D = $VisualRoot/Visual
+
+var _outline_material: ShaderMaterial
+var _is_player_near: bool = false
+var _is_aimed: bool = false
 
 var _payload: PickupPayload
 var _player: Node3D
@@ -122,6 +159,11 @@ func _ready() -> void:
 	)
 
 	_visual_rest_position = _visual_root.position
+
+	_visual.frame_changed.connect(
+		_on_visual_frame_changed
+	)
+
 	_apply_presentation()
 
 
@@ -184,12 +226,14 @@ func try_interact(receiver: Node) -> bool:
 	if _payload == null:
 		return false
 
-	if not _payload.try_apply_to(receiver):
-		return false
-
-	var collection_target: Node3D = _get_collection_target(receiver)
+	var collection_target: Node3D = _get_collection_target(
+		receiver
+	)
 
 	if collection_target == null:
+		return false
+
+	if not _payload.try_apply_to(receiver):
 		return false
 
 	_begin_collection(collection_target)
@@ -215,6 +259,22 @@ func get_display_name() -> String:
 	return _payload.get_display_name()
 
 
+func set_is_player_near(value: bool) -> void:
+	if _is_player_near == value:
+		return
+
+	_is_player_near = value
+	_apply_outline_state()
+
+
+func set_is_aimed(value: bool) -> void:
+	if _is_aimed == value:
+		return
+
+	_is_aimed = value
+	_apply_outline_state()
+
+
 func _apply_presentation() -> void:
 	if _payload == null:
 		return
@@ -231,6 +291,10 @@ func _apply_presentation() -> void:
 	_visual.position = presentation.visual_offset
 	_visual.scale = presentation.visual_scale
 	_visual.play()
+
+	_setup_outline_material()
+	_update_outline_sprite_texture()
+	_apply_outline_state()
 
 
 func _update_grounding(delta: float) -> void:
@@ -291,7 +355,7 @@ func _finish_grounding() -> void:
 	_state = State.IDLE
 	_hover_time_s = 0.0
 	_hover_enter_elapsed_s = 0.0
-	
+
 
 func _update_idle(delta: float) -> void:
 	_hover_time_s += delta
@@ -302,6 +366,7 @@ func _update_idle(delta: float) -> void:
 		0.0,
 		1.0
 	)
+
 	var hover_weight: float = ease(
 		hover_enter_progress,
 		-2.0
@@ -309,6 +374,7 @@ func _update_idle(delta: float) -> void:
 
 	_update_hover(hover_weight)
 	_update_facing(delta)
+	_update_outline_state()
 
 
 func _update_collection(delta: float) -> void:
@@ -323,7 +389,11 @@ func _update_collection(delta: float) -> void:
 		0.0,
 		1.0
 	)
-	var eased_progress: float = ease(progress, -3.0)
+
+	var eased_progress: float = ease(
+		progress,
+		-3.0
+	)
 
 	var target_position: Vector3 = (
 		_collection_target.global_position
@@ -442,16 +512,153 @@ func _begin_collection(target: Node3D) -> void:
 	_collection_start_position = global_position
 	_collection_elapsed_s = 0.0
 
+	if _outline_material != null:
+		_outline_material.set_shader_parameter(
+			"line_color",
+			Color.TRANSPARENT
+		)
+
 	_interaction_area.set_deferred(
 		"monitoring",
 		false
 	)
+
 	_interaction_area.set_deferred(
 		"monitorable",
 		false
 	)
 
 	collection_started.emit(self, _payload)
+
+
+func _setup_outline_material() -> void:
+	if _outline_material != null:
+		return
+
+	var template_material: ShaderMaterial = (
+		_visual.material_override as ShaderMaterial
+	)
+
+	if template_material == null:
+		push_error(
+			"WorldPickup Visual requires a ShaderMaterial "
+			+ "in material_override."
+		)
+		return
+
+	_outline_material = (
+		template_material.duplicate() as ShaderMaterial
+	)
+
+	_visual.material_override = _outline_material
+
+
+func _update_outline_sprite_texture() -> void:
+	if _outline_material == null:
+		return
+
+	if _visual.sprite_frames == null:
+		return
+
+	if not _visual.sprite_frames.has_animation(
+		_visual.animation
+	):
+		return
+
+	var frame_texture: Texture2D = (
+		_visual.sprite_frames.get_frame_texture(
+			_visual.animation,
+			_visual.frame
+		)
+	)
+
+	if frame_texture == null:
+		return
+
+	_outline_material.set_shader_parameter(
+		"sprite_texture",
+		frame_texture
+	)
+
+
+func _on_visual_frame_changed() -> void:
+	_update_outline_sprite_texture()
+
+
+func _apply_outline_state() -> void:
+	if _outline_material == null or _payload == null:
+		return
+
+	if _state == State.COLLECTING:
+		return
+
+	var rarity_definition: RarityDefinition = (
+		RARITY_CATALOG.get_definition(_payload.get_rarity())
+	)
+
+	if rarity_definition == null:
+		return
+
+	var outline_color: Color = rarity_definition.outline_color
+	var outline_alpha: float = distant_outline_alpha
+	var saturation: float = distant_outline_saturation
+
+	if _is_player_near:
+		outline_alpha = near_outline_alpha
+		saturation = near_outline_saturation
+
+	if _is_aimed:
+		outline_alpha = aimed_outline_alpha
+		saturation = aimed_outline_saturation
+
+	var luminance: float = outline_color.get_luminance()
+
+	var grayscale: Color = Color(
+		luminance,
+		luminance,
+		luminance,
+		1.0
+	)
+
+	var state_color: Color = grayscale.lerp(
+		outline_color,
+		saturation
+	)
+
+	if not _is_aimed:
+		var pulse: float = 1.0 + (
+			sin(
+				_hover_time_s
+				* TAU
+				* outline_pulse_frequency_hz
+			)
+			* outline_pulse_alpha_strength
+		)
+
+		outline_alpha *= pulse
+
+	state_color.a = clampf(
+		outline_alpha,
+		0.0,
+		1.0
+	)
+
+	_outline_material.set_shader_parameter(
+		"line_color",
+		state_color
+	)
+
+	_outline_material.set_shader_parameter(
+		"glowSize",
+		rarity_definition.glow_size_px
+	)
+
+
+func _update_outline_state() -> void:
+	if _state != State.IDLE:
+		return
+
+	_apply_outline_state()
 
 
 func _unlock_interaction_after_delay(

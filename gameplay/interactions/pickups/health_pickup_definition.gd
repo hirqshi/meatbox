@@ -5,6 +5,9 @@ extends Resource
 @export var pickup_id: StringName
 @export var display_name: String
 
+@export_category("Rarity")
+@export var rarity: ItemRarity.Type = ItemRarity.Type.COMMON
+
 @export_category("Health")
 @export_range(
 	0.1,

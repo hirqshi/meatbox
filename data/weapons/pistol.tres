@@ -8,6 +8,7 @@
 script = ExtResource("1_4qe5y")
 weapon_id = &"pistol"
 display_name = "Pistol"
+rarity = 1
 damage = 15.0
 fire_rate_shots_per_second = 4.0
 pickup_presentation = ExtResource("2_fxxv0")

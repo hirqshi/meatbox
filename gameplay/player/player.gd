@@ -41,11 +41,18 @@ func _ready() -> void:
 
 	_interactor.setup(self)
 	_interaction_controller.setup(self)
-
+	
+	_interaction_controller.aimed_interactable_changed.connect(
+		_on_aimed_interactable_changed
+	)
+	
 	_interactor.interactable_entered.connect(
 		_on_interactable_entered
 	)
-
+	_interactor.interactable_exited.connect(
+		_on_interactable_exited
+	)
+	
 	_health_component.died.connect(_on_health_component_died)
 	_health_component.health_changed.connect(_on_health_changed)
 	_health_component.damaged.connect(
@@ -175,11 +182,72 @@ func _on_damage_blocked(
 func _on_interactable_entered(
 	interactable: WorldInteractable
 ) -> void:
+	_set_pickup_near_state(interactable, true)
+
 	if not interactable.is_auto_interaction_enabled():
 		return
 
 	interactable.try_interact(_interactor.get_receiver())
 
+
+func _on_interactable_exited(
+	interactable: WorldInteractable
+) -> void:
+	_set_pickup_near_state(interactable, false)
+
+
+func _set_pickup_near_state(
+	interactable: WorldInteractable,
+	is_near: bool
+) -> void:
+	var pickup_area: PickupInteractionArea = (
+		interactable as PickupInteractionArea
+	)
+
+	if pickup_area == null:
+		return
+
+	var pickup: WorldPickup = (
+		pickup_area.get_parent() as WorldPickup
+	)
+
+	if pickup == null:
+		return
+
+	pickup.set_is_player_near(is_near)
+	
+
+func _on_aimed_interactable_changed(
+	previous: WorldInteractable,
+	current: WorldInteractable
+) -> void:
+	_set_pickup_aim_state(previous, false)
+	_set_pickup_aim_state(current, true)
+
+
+func _set_pickup_aim_state(
+	interactable: WorldInteractable,
+	is_aimed: bool
+) -> void:
+	if not is_instance_valid(interactable):
+		return
+
+	var pickup_area: PickupInteractionArea = (
+		interactable as PickupInteractionArea
+	)
+
+	if pickup_area == null:
+		return
+
+	var pickup: WorldPickup = (
+		pickup_area.get_parent() as WorldPickup
+	)
+
+	if pickup == null:
+		return
+
+	pickup.set_is_aimed(is_aimed)
+	
 
 func _get_damage_source_name(source: Node) -> String:
 	if source == null:

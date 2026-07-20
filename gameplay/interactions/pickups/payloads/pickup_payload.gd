@@ -18,6 +18,10 @@ func get_display_name() -> String:
 	return "Unnamed pickup"
 
 
+func get_rarity() -> ItemRarity.Type:
+	return ItemRarity.Type.COMMON
+
+
 func try_apply_to(_receiver: Node) -> bool:
 	push_error(
 		"PickupPayload '%s' must override try_apply_to()."

@@ -38,6 +38,10 @@ func get_display_name() -> String:
 	return definition.display_name
 
 
+func get_rarity() -> ItemRarity.Type:
+	return definition.rarity
+
+
 func try_apply_to(receiver: Node) -> bool:
 	var player: CharacterBody3D = receiver as CharacterBody3D
 
@@ -45,7 +49,8 @@ func try_apply_to(receiver: Node) -> bool:
 		return false
 
 	var health_component: HealthComponent = (
-		player.get_node_or_null("HealthComponent") as HealthComponent
+		player.get_node_or_null("HealthComponent")
+		as HealthComponent
 	)
 
 	if health_component == null:

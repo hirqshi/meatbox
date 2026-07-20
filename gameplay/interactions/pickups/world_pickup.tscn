@@ -3,9 +3,21 @@
 [ext_resource type="Texture2D" uid="uid://cyhpee43i1q4r" path="res://assets/placeholder/sprites/bulletplayer.png" id="1_bllfk"]
 [ext_resource type="Script" uid="uid://dscw0ybn32a7r" path="res://gameplay/interactions/pickups/world_pickup.gd" id="1_flahs"]
 [ext_resource type="Script" uid="uid://d141u763onmi6" path="res://gameplay/interactions/pickups/pickup_interaction_area.gd" id="2_prfb4"]
+[ext_resource type="Shader" uid="uid://ny7bmf4hfs5r" path="res://gameplay/interactions/pickups/shaders/world_pickup_outline.gdshader" id="3_lhsdk"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6m30h"]
 radius = 1.2
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_prfb4"]
+render_priority = 0
+shader = ExtResource("3_lhsdk")
+shader_parameter/line_color = Color(0.63, 0.63, 0.63, 1)
+shader_parameter/glowSize = 2.000000095
+shader_parameter/glowDensity = 1
+shader_parameter/glowRadialCoverage = 4
+shader_parameter/glowAngle = 0.0
+shader_parameter/glowSharpness = 0.0
+shader_parameter/alphaThreshold = 1.0
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_6m30h"]
 animations = [{
@@ -24,6 +36,10 @@ descent_speed_mps = 5.49
 hover_height_m = 0.85
 hover_frequency_hz = 0.92
 hover_enter_duration_s = 0.3
+distant_outline_alpha = 0.1
+near_outline_alpha = 0.48
+outline_pulse_frequency_hz = 1.19
+outline_pulse_alpha_strength = 0.4
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=888181880]
 collision_layer = 16
@@ -36,5 +52,7 @@ shape = SubResource("SphereShape3D_6m30h")
 [node name="VisualRoot" type="Node3D" parent="." unique_id=943392904]
 
 [node name="Visual" type="AnimatedSprite3D" parent="VisualRoot" unique_id=1550390472]
+material_override = SubResource("ShaderMaterial_prfb4")
 pixel_size = 0.0185
+texture_filter = 2
 sprite_frames = SubResource("SpriteFrames_6m30h")

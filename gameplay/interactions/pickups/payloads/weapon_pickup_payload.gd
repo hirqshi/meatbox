@@ -33,6 +33,10 @@ func get_display_name() -> String:
 	return weapon.definition.display_name
 
 
+func get_rarity() -> ItemRarity.Type:
+	return weapon.definition.rarity
+
+
 func try_apply_to(receiver: Node) -> bool:
 	var player: CharacterBody3D = receiver as CharacterBody3D
 

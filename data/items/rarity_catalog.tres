@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="RarityCatalog" format=3 uid="uid://c12jasyhghmi6"]
+
+[ext_resource type="Script" uid="uid://cxqdbdnnb6rv7" path="res://gameplay/items/rarity_catalog.gd" id="1_ejl80"]
+[ext_resource type="Script" uid="uid://dpj3c0fgoppww" path="res://gameplay/items/rarity_definition.gd" id="1_tayem"]
+
+[sub_resource type="Resource" id="Resource_tayem"]
+script = ExtResource("1_tayem")
+outline_color = Color(0.6, 0.6, 0.6, 1)
+metadata/_custom_type_script = "uid://dpj3c0fgoppww"
+
+[sub_resource type="Resource" id="Resource_f8fn3"]
+script = ExtResource("1_tayem")
+rarity = 3
+display_name = "Legendary"
+outline_color = Color(0.87, 0.17400004, 0, 1)
+metadata/_custom_type_script = "uid://dpj3c0fgoppww"
+
+[sub_resource type="Resource" id="Resource_d0yn6"]
+script = ExtResource("1_tayem")
+rarity = 2
+display_name = "Rare"
+outline_color = Color(0.511, 0.1825, 0.73, 1)
+metadata/_custom_type_script = "uid://dpj3c0fgoppww"
+
+[sub_resource type="Resource" id="Resource_20yhj"]
+script = ExtResource("1_tayem")
+rarity = 1
+display_name = "Uncommon"
+outline_color = Color(0.65675, 0.74, 0.185, 1)
+metadata/_custom_type_script = "uid://dpj3c0fgoppww"
+
+[resource]
+script = ExtResource("1_ejl80")
+common = SubResource("Resource_tayem")
+uncommon = SubResource("Resource_20yhj")
+rare = SubResource("Resource_d0yn6")
+legendary = SubResource("Resource_f8fn3")
+metadata/_custom_type_script = "uid://cxqdbdnnb6rv7"

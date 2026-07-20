@@ -1,6 +1,11 @@
 class_name InteractionController
 extends Node
 
+signal aimed_interactable_changed(
+	previous: WorldInteractable,
+	current: WorldInteractable
+)
+
 @export_category("Dependencies")
 @export var interactor: PlayerInteractor
 @export var aim_ray: RayCast3D
@@ -103,7 +108,16 @@ func _set_current_interactable(
 	if _current_interactable == value:
 		return
 
+	var previous_interactable: WorldInteractable = (
+		_current_interactable
+	)
+
 	_current_interactable = value
+
+	aimed_interactable_changed.emit(
+		previous_interactable,
+		_current_interactable
+	)
 
 
 func _on_interactable_entered(

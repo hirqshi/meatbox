@@ -12,26 +12,33 @@ enum FiringMode {
 @export var weapon_id: StringName
 @export var display_name: String
 
+@export_category("Rarity")
+@export var rarity: ItemRarity.Type = ItemRarity.Type.COMMON
+
 @export_category("Fire")
 @export var firing_mode: FiringMode = FiringMode.HITSCAN
+
 @export_range(
 	0.0,
 	100000.0,
 	0.1,
 	"suffix:m"
 ) var range_m: float = 100.0
+
 @export_range(
 	0.0,
 	100000.0,
 	0.1,
 	"suffix:damage"
 ) var damage: float = 1.0
+
 @export_range(
 	0.01,
 	1000.0,
 	0.01,
 	"suffix:shots/s"
 ) var fire_rate_shots_per_second: float = 8.0
+
 const HIT_MASK_WORLD_AND_ENEMY_HURTBOX: int = (
 	(1 << 0)
 	| (1 << 2)
@@ -43,7 +50,10 @@ const HIT_MASK_WORLD_AND_ENEMY_HURTBOX: int = (
 
 @export_category("Ammo")
 @export var uses_ammo: bool = false
-@export_range(0, 100000, 1) var magazine_size: int = 0
+
+@export_range(0, 100000, 1)
+var magazine_size: int = 0
+
 @export_range(
 	0.0,
 	60.0,
