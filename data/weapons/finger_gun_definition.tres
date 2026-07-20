@@ -43,13 +43,13 @@ animations = [{
 [sub_resource type="Resource" id="Resource_cii1l"]
 script = ExtResource("4_ua4mq")
 sprite_frames = SubResource("SpriteFrames_wkg85")
-view_offset = Vector3(0.6, -0.45, -0.85)
 metadata/_custom_type_script = "uid://cp10hw5j2dix6"
 
 [resource]
 script = ExtResource("1_dgrdm")
 weapon_id = &"finger_gun"
 display_name = "Finger Gun"
+rarity = 3
 damage = 3.0
 fire_rate_shots_per_second = 2.0
 view_presentation = SubResource("Resource_cii1l")

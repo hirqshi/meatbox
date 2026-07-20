@@ -41,14 +41,17 @@ func _ready() -> void:
 
 	_camera_juice.setup(self, definition)
 	_camera_juice.set_is_enabled(true)
-	_motor.landed.connect(_camera_juice.register_landing)
 
 	_combat.setup(self)
 	_weapon_controller.setup(self)
 	_weapon_view.setup(
-	_weapon_controller,
-	_combat
+		_weapon_controller,
+		_combat,
+		self
 	)
+
+	_motor.landed.connect(_camera_juice.register_landing)
+	_motor.landed.connect(_weapon_view.register_landing)
 
 	_interactor.setup(self)
 	_interaction_controller.setup(self)
@@ -83,7 +86,9 @@ func _input(event: InputEvent) -> void:
 
 	_motor.handle_input(event)
 	_look_controller.handle_input(event)
-
+	if event is InputEventMouseMotion:
+		_weapon_view.register_look_delta(event.relative)
+		
 	_weapon_controller.handle_input(event)
 	_combat.handle_input(event)
 	_interaction_controller.handle_input(event)
@@ -104,6 +109,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_camera_juice.physics_update(delta)
+	_weapon_view.physics_update(delta)
 
 
 func apply_debug_damage(amount: float) -> void:

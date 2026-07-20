@@ -19,6 +19,7 @@ signal active_weapon_ammo_changed(
 	current_ammo: int,
 	reserve_ammo: int
 )
+signal inventory_navigation_blocked(direction: int)
 
 @export_category("Definitions")
 @export var finger_gun_definition: WeaponDefinition
@@ -158,11 +159,11 @@ func handle_input(event: InputEvent) -> void:
 		return
 
 	if mouse_button_event.button_index == MOUSE_BUTTON_WHEEL_UP:
-		_inventory.select_next_occupied_weapon(-1)
+		_try_select_next_occupied_weapon(-1)
 		return
 
 	if mouse_button_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		_inventory.select_next_occupied_weapon(1)
+		_try_select_next_occupied_weapon(1)
 
 
 func get_inventory() -> WeaponInventory:
@@ -349,6 +350,32 @@ func try_drop_active_regular_weapon() -> bool:
 	return true
 
 
+func _try_select_next_occupied_weapon(
+	direction: int
+) -> void:
+	assert(
+		direction == -1 or direction == 1,
+		"Weapon navigation direction must be -1 or 1."
+	)
+
+	var active_slot_index: int = (
+		_inventory.get_active_slot_index()
+	)
+
+	var next_slot_index: int = (
+		_find_next_occupied_slot_index(
+			active_slot_index,
+			direction
+		)
+	)
+
+	if next_slot_index == -1:
+		inventory_navigation_blocked.emit(direction)
+		return
+
+	_inventory.select_slot(next_slot_index)
+
+
 func add_regular_slots(slot_count_to_add: int) -> void:
 	if _inventory == null:
 		return
@@ -390,6 +417,22 @@ func _find_weapon_slot_index(weapon: WeaponInstance) -> int:
 
 	return -1
 
+
+func _find_next_occupied_slot_index(
+	from_slot_index: int,
+	direction: int
+) -> int:
+	var slot_count: int = _inventory.get_slot_count()
+	var slot_index: int = from_slot_index + direction
+
+	while slot_index >= 0 and slot_index < slot_count:
+		if _inventory.get_weapon_at(slot_index) != null:
+			return slot_index
+
+		slot_index += direction
+
+	return -1
+	
 
 func _observe_active_weapon(
 	weapon: WeaponInstance
