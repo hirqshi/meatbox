@@ -233,12 +233,25 @@ func try_interact(receiver: Node) -> bool:
 	if collection_target == null:
 		return false
 
-	if not _payload.try_apply_to(receiver):
+	var apply_result: PickupApplyResult = (
+		_payload.try_apply_to(receiver)
+	)
+
+	if apply_result == null:
 		return false
 
-	_begin_collection(collection_target)
+	match apply_result.status:
+		PickupApplyResult.Status.REJECTED:
+			return false
 
-	return true
+		PickupApplyResult.Status.PARTIALLY_CONSUMED:
+			return apply_result.accepted_amount > 0
+
+		PickupApplyResult.Status.CONSUMED:
+			_begin_collection(collection_target)
+			return true
+
+	return false
 
 
 func is_auto_interaction_enabled() -> bool:

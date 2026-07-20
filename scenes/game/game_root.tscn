@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://dq4kuo36pj5ui" path="res://debug/combat_target.gd" id="3_pevc5"]
 [ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="4_0krdv"]
 [ext_resource type="Resource" uid="uid://1nvkpj6eueh3" path="res://data/enemies/combat_target_health.tres" id="4_bca70"]
+[ext_resource type="Resource" uid="uid://1rv30rlwo7j5" path="res://gameplay/interactions/pickups/definitions/universal_ammo.tres" id="4_c2lvh"]
 [ext_resource type="Resource" uid="uid://dfnulgjq013u7" path="res://data/weapons/pistol.tres" id="4_k63du"]
 [ext_resource type="Script" uid="uid://bkdiiix2ra714" path="res://core/combat/hurtbox_component.gd" id="4_n6w2t"]
 [ext_resource type="Script" uid="uid://bqlsemoeidgbd" path="res://gameplay/interactions/pickups/spawning/world_pickup_spawner.gd" id="10_cylga"]
@@ -36,6 +37,7 @@ material = SubResource("StandardMaterial3D_rx5uh")
 script = ExtResource("1_dw3h0")
 default_run_config = ExtResource("2_esgjc")
 health_pickup_definition = ExtResource("3_elccf")
+universal_ammo_definition = ExtResource("4_c2lvh")
 pistol_definition = ExtResource("4_k63du")
 
 [node name="WorldRoot" type="Node3D" parent="." unique_id=2101649433]
@@ -97,7 +99,5 @@ transform = Transform3D(1, 0, 0, 0, -0.18101287, 0.98348075, 0, -0.98348075, -0.
 [node name="WorldPickupSpawner" type="Node" parent="." unique_id=238975352 node_paths=PackedStringArray("gameplay_root")]
 script = ExtResource("10_cylga")
 gameplay_root = NodePath("../GameplayRoot")
-
-[node name="UiRoot" type="CanvasLayer" parent="." unique_id=487258339]
 
 [node name="DebugRoot" type="CanvasLayer" parent="." unique_id=1849562285]

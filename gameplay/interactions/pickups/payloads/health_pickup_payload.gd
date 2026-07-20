@@ -42,11 +42,11 @@ func get_rarity() -> ItemRarity.Type:
 	return definition.rarity
 
 
-func try_apply_to(receiver: Node) -> bool:
+func try_apply_to(receiver: Node) -> PickupApplyResult:
 	var player: CharacterBody3D = receiver as CharacterBody3D
 
 	if player == null:
-		return false
+		return PickupApplyResult.rejected()
 
 	var health_component: HealthComponent = (
 		player.get_node_or_null("HealthComponent")
@@ -54,10 +54,13 @@ func try_apply_to(receiver: Node) -> bool:
 	)
 
 	if health_component == null:
-		return false
+		return PickupApplyResult.rejected()
 
 	var restored_health: float = (
 		health_component.restore_health(heal_amount)
 	)
 
-	return restored_health > 0.0
+	if restored_health <= 0.0:
+		return PickupApplyResult.rejected()
+
+	return PickupApplyResult.consumed()

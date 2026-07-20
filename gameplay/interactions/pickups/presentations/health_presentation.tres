@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PickupPresentationDefinition" format=3 uid="uid://c74toiv45ak4h"]
+
+[ext_resource type="Script" uid="uid://xxsh6wggdj6u" path="res://gameplay/interactions/pickups/pickup_presentation_definition.gd" id="1_ot4n6"]
+[ext_resource type="Texture2D" uid="uid://duwxi7fp5oqft" path="res://assets/placeholder/sprites/health_pickup.png" id="2_4xs6m"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_l3cfh"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_4xs6m")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
+
+[resource]
+script = ExtResource("1_ot4n6")
+is_auto_pickup_enabled = true
+sprite_frames = SubResource("SpriteFrames_l3cfh")
+metadata/_custom_type_script = "uid://xxsh6wggdj6u"

@@ -1,6 +1,8 @@
 class_name WorldPickupSpawner
 extends Node
 
+signal pickup_spawned(pickup: WorldPickup)
+
 const WORLD_PICKUP_SCENE: PackedScene = preload(
 	"res://gameplay/interactions/pickups/world_pickup.tscn"
 )
@@ -55,6 +57,8 @@ func spawn(
 	gameplay_root.add_child(pickup)
 	pickup.global_position = spawn_position
 	pickup.setup(payload, _player)
+
+	pickup_spawned.emit(pickup)
 
 	return pickup
 

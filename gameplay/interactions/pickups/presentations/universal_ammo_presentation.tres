@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PickupPresentationDefinition" format=3 uid="uid://d25l1h4vguvbp"]
+
+[ext_resource type="Script" uid="uid://xxsh6wggdj6u" path="res://gameplay/interactions/pickups/pickup_presentation_definition.gd" id="1_ef1r4"]
+[ext_resource type="Texture2D" uid="uid://dp1fw2k0f5qw7" path="res://assets/placeholder/sprites/ammo_pickup.png" id="2_s4omv"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_e55t4"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_s4omv")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
+
+[resource]
+script = ExtResource("1_ef1r4")
+sprite_frames = SubResource("SpriteFrames_e55t4")
+metadata/_custom_type_script = "uid://xxsh6wggdj6u"

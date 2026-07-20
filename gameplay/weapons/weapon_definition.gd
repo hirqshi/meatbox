@@ -54,6 +54,12 @@ const HIT_MASK_WORLD_AND_ENEMY_HURTBOX: int = (
 @export_range(0, 100000, 1)
 var magazine_size: int = 0
 
+@export_range(0, 100000, 1)
+var initial_reserve_ammo: int = 0
+
+@export_range(0, 100000, 1)
+var max_reserve_ammo: int = 0
+
 @export_range(
 	0.0,
 	60.0,
@@ -92,7 +98,22 @@ func get_validation_error() -> String:
 			"magazine_size must be greater than zero "
 			+ "when uses_ammo is enabled."
 		)
+		
+	if uses_ammo and max_reserve_ammo <= 0:
+		return (
+			"max_reserve_ammo must be greater than zero "
+			+ "when uses_ammo is enabled."
+		)
 
+	if initial_reserve_ammo < 0:
+		return "initial_reserve_ammo must not be negative."
+
+	if initial_reserve_ammo > max_reserve_ammo:
+		return (
+			"initial_reserve_ammo must not exceed "
+			+ "max_reserve_ammo."
+		)
+		
 	if uses_ammo and reload_duration_s <= 0.0:
 		return (
 			"reload_duration_s must be greater than zero "

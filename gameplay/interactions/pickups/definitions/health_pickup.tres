@@ -1,29 +1,11 @@
 [gd_resource type="Resource" script_class="HealthPickupDefinition" format=3 uid="uid://cgygtwfc4hn66"]
 
 [ext_resource type="Script" uid="uid://ccvhg87gfhgj6" path="res://gameplay/interactions/pickups/health_pickup_definition.gd" id="1_5cmhb"]
-[ext_resource type="Script" uid="uid://xxsh6wggdj6u" path="res://gameplay/interactions/pickups/pickup_presentation_definition.gd" id="1_6vjms"]
-[ext_resource type="Texture2D" uid="uid://duwxi7fp5oqft" path="res://assets/placeholder/sprites/health_pickup.png" id="2_6vjms"]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_l3cfh"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("2_6vjms")
-}],
-"loop": 1,
-"name": &"default",
-"speed": 5.0
-}]
-
-[sub_resource type="Resource" id="Resource_k2fmo"]
-script = ExtResource("1_6vjms")
-is_auto_pickup_enabled = true
-sprite_frames = SubResource("SpriteFrames_l3cfh")
-metadata/_custom_type_script = "uid://xxsh6wggdj6u"
+[ext_resource type="Resource" uid="uid://c74toiv45ak4h" path="res://gameplay/interactions/pickups/presentations/health_presentation.tres" id="1_t3835"]
 
 [resource]
 script = ExtResource("1_5cmhb")
 pickup_id = &"health"
 display_name = "Health"
-pickup_presentation = SubResource("Resource_k2fmo")
+pickup_presentation = ExtResource("1_t3835")
 metadata/_custom_type_script = "uid://ccvhg87gfhgj6"

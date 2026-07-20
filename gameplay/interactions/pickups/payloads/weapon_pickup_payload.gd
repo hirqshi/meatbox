@@ -37,11 +37,11 @@ func get_rarity() -> ItemRarity.Type:
 	return weapon.definition.rarity
 
 
-func try_apply_to(receiver: Node) -> bool:
+func try_apply_to(receiver: Node) -> PickupApplyResult:
 	var player: CharacterBody3D = receiver as CharacterBody3D
 
 	if player == null:
-		return false
+		return PickupApplyResult.rejected()
 
 	var weapon_controller: WeaponController = (
 		player.get_node_or_null("WeaponController")
@@ -49,6 +49,9 @@ func try_apply_to(receiver: Node) -> bool:
 	)
 
 	if weapon_controller == null:
-		return false
+		return PickupApplyResult.rejected()
 
-	return weapon_controller.try_accept_weapon(weapon)
+	if not weapon_controller.try_accept_weapon(weapon):
+		return PickupApplyResult.rejected()
+
+	return PickupApplyResult.consumed()

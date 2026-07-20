@@ -11,6 +11,11 @@ signal weapon_replaced(
 	new_weapon: WeaponInstance
 )
 signal weapon_dropped(weapon: WeaponInstance)
+signal active_weapon_ammo_changed(
+	weapon: WeaponInstance,
+	current_ammo: int,
+	reserve_ammo: int
+)
 
 @export_category("Definitions")
 @export var finger_gun_definition: WeaponDefinition
@@ -27,6 +32,7 @@ signal weapon_dropped(weapon: WeaponInstance)
 var _owner_body: CharacterBody3D
 var _inventory: WeaponInventory
 var _is_enabled: bool = true
+var _observed_active_weapon: WeaponInstance
 
 
 func setup(owner_body: CharacterBody3D) -> void:
@@ -63,7 +69,10 @@ func setup(owner_body: CharacterBody3D) -> void:
 	_inventory.active_weapon_changed.connect(
 		_on_active_weapon_changed
 	)
-
+	_observe_active_weapon(
+		_inventory.get_active_weapon()
+	)
+	
 	combat.set_active_weapon(_inventory.get_active_weapon())
 
 
@@ -114,7 +123,11 @@ func handle_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"weapon_slot_10"):
 		_inventory.select_slot(9)
 		return
-
+		
+	if event.is_action_pressed(&"reload_weapon"):
+		try_reload_active_weapon()
+		return
+		
 	if event.is_action_pressed(&"drop_weapon"):
 		try_drop_active_regular_weapon()
 		return
@@ -147,6 +160,58 @@ func get_active_weapon() -> WeaponInstance:
 
 	return _inventory.get_active_weapon()
 
+
+func try_add_ammo(
+	ammo_definition: AmmoPickupDefinition,
+	amount: int
+) -> int:
+	if _inventory == null:
+		return 0
+
+	if ammo_definition == null or amount <= 0:
+		return 0
+
+	var active_slot_index: int = (
+		_inventory.get_active_slot_index()
+	)
+
+	if active_slot_index == 0:
+		return 0
+
+	var active_weapon: WeaponInstance = (
+		_inventory.get_active_weapon()
+	)
+
+	if active_weapon == null:
+		return 0
+
+	if not active_weapon.definition.uses_ammo:
+		return 0
+
+	if not ammo_definition.is_compatible_with(
+		active_weapon.definition
+	):
+		return 0
+
+	return active_weapon.add_reserve_ammo(amount)
+
+
+func try_reload_active_weapon() -> bool:
+	if _inventory == null:
+		return false
+
+	if _inventory.get_active_slot_index() == 0:
+		return false
+
+	var active_weapon: WeaponInstance = (
+		_inventory.get_active_weapon()
+	)
+
+	if active_weapon == null:
+		return false
+
+	return active_weapon.reload()
+	
 
 func try_accept_weapon(new_weapon: WeaponInstance) -> bool:
 	if _inventory == null or new_weapon == null:
@@ -225,7 +290,10 @@ func _on_active_weapon_changed(
 	active_slot_index: int,
 	active_weapon: WeaponInstance
 ) -> void:
+	_observe_active_weapon(active_weapon)
+
 	combat.set_active_weapon(active_weapon)
+
 	active_weapon_changed.emit(
 		active_slot_index,
 		active_weapon
@@ -243,3 +311,46 @@ func _find_weapon_slot_index(weapon: WeaponInstance) -> int:
 			return slot_index
 
 	return -1
+
+
+func _observe_active_weapon(
+	weapon: WeaponInstance
+) -> void:
+	if _observed_active_weapon != null:
+		if _observed_active_weapon.ammo_changed.is_connected(
+			_on_active_weapon_ammo_changed
+		):
+			_observed_active_weapon.ammo_changed.disconnect(
+				_on_active_weapon_ammo_changed
+			)
+
+	_observed_active_weapon = weapon
+
+	if _observed_active_weapon == null:
+		return
+
+	if not _observed_active_weapon.ammo_changed.is_connected(
+		_on_active_weapon_ammo_changed
+	):
+		_observed_active_weapon.ammo_changed.connect(
+			_on_active_weapon_ammo_changed
+		)
+
+	_on_active_weapon_ammo_changed(
+		_observed_active_weapon.current_ammo,
+		_observed_active_weapon.reserve_ammo
+	)
+
+
+func _on_active_weapon_ammo_changed(
+	current_ammo: int,
+	reserve_ammo: int
+) -> void:
+	if _observed_active_weapon == null:
+		return
+
+	active_weapon_ammo_changed.emit(
+		_observed_active_weapon,
+		current_ammo,
+		reserve_ammo
+	)

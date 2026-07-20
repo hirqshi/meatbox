@@ -22,9 +22,10 @@ func get_rarity() -> ItemRarity.Type:
 	return ItemRarity.Type.COMMON
 
 
-func try_apply_to(_receiver: Node) -> bool:
+func try_apply_to(_receiver: Node) -> PickupApplyResult:
 	push_error(
 		"PickupPayload '%s' must override try_apply_to()."
 		% get_script().resource_path
 	)
-	return false
+
+	return PickupApplyResult.rejected()

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AmmoPickupDefinition" format=3 uid="uid://1rv30rlwo7j5"]
+
+[ext_resource type="Resource" uid="uid://d25l1h4vguvbp" path="res://gameplay/interactions/pickups/presentations/universal_ammo_presentation.tres" id="1_7unu0"]
+[ext_resource type="Script" uid="uid://coaabke0huqbm" path="res://gameplay/interactions/pickups/ammo_pickup_definition.gd" id="1_lnxrk"]
+
+[resource]
+script = ExtResource("1_lnxrk")
+pickup_id = &"universal_ammo"
+display_name = "Ammo"
+pickup_presentation = ExtResource("1_7unu0")
+metadata/_custom_type_script = "uid://coaabke0huqbm"

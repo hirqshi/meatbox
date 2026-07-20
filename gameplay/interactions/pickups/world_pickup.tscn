@@ -40,6 +40,7 @@ distant_outline_alpha = 0.1
 near_outline_alpha = 0.48
 outline_pulse_frequency_hz = 1.19
 outline_pulse_alpha_strength = 0.4
+collect_duration_s = 0.3
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=888181880]
 collision_layer = 16

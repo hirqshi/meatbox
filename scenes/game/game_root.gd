@@ -13,6 +13,7 @@ const WORLD_PICKUP_SCENE: PackedScene = preload(
 @export var enemy_spawn_position: Vector3 = Vector3(0.0, 1.0, -10.0)
 @export var default_run_config: RunConfig
 @export var health_pickup_definition: HealthPickupDefinition
+@export var universal_ammo_definition: AmmoPickupDefinition
 @export var pistol_definition: WeaponDefinition
 @export var player_spawn_position: Vector3 = Vector3(0.0, 3.0, 0.0)
 
@@ -41,6 +42,18 @@ func _ready() -> void:
 		% [
 			health_pickup_definition.resource_path,
 			health_pickup_definition.get_validation_error(),
+		]
+	)
+	assert(
+		universal_ammo_definition != null,
+		"GameRoot requires an AmmoPickupDefinition."
+	)
+	assert(
+		universal_ammo_definition.is_valid(),
+		"Invalid ammo pickup definition '%s': %s"
+		% [
+			universal_ammo_definition.resource_path,
+			universal_ammo_definition.get_validation_error(),
 		]
 	)
 	assert(
@@ -108,6 +121,11 @@ func _register_debug_commands() -> void:
 		_spawn_health_from_console
 	)
 	DeveloperConsole.register_command(
+		&"spawn_ammo",
+		"Usage: spawn_ammo <amount>.",
+		_spawn_ammo_from_console
+	)
+	DeveloperConsole.register_command(
 		&"spawn_weapon",
 		"Usage: spawn_weapon pistol.",
 		_spawn_weapon_from_console
@@ -152,6 +170,10 @@ func _unregister_debug_commands() -> void:
 	DeveloperConsole.unregister_command(
 		&"spawn_health",
 		_spawn_health_from_console
+	)
+	DeveloperConsole.unregister_command(
+		&"spawn_ammo",
+		_spawn_ammo_from_console
 	)
 	DeveloperConsole.unregister_command(
 		&"spawn_weapon",
@@ -401,6 +423,60 @@ func _spawn_health_from_console(arguments: PackedStringArray) -> void:
 		]
 	)
 	
+
+func _spawn_ammo_from_console(
+	arguments: PackedStringArray
+) -> void:
+	if arguments.size() != 1:
+		DeveloperConsole.log_error(
+			"Usage: spawn_ammo <amount>."
+		)
+		return
+
+	if not arguments[0].is_valid_int():
+		DeveloperConsole.log_error(
+			"Ammo amount must be a whole number."
+		)
+		return
+
+	var amount: int = arguments[0].to_int()
+
+	if amount <= 0:
+		DeveloperConsole.log_error(
+			"Ammo amount must be greater than zero."
+		)
+		return
+
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var spawn_position: Vector3 = (
+		player.global_position
+		+ player.global_transform.basis.z * -2.0
+		+ Vector3.UP * 2.0
+	)
+
+	var pickup: WorldPickup = _spawn_pickup(
+		AmmoPickupPayload.new(
+			universal_ammo_definition,
+			amount
+		),
+		spawn_position,
+		player
+	)
+
+	DeveloperConsole.log_info(
+		"Spawned %d ammo at %.1f, %.1f, %.1f."
+		% [
+			amount,
+			pickup.global_position.x,
+			pickup.global_position.y,
+			pickup.global_position.z,
+		]
+	)
+	
 	
 func _spawn_weapon_from_console(
 	arguments: PackedStringArray
@@ -526,22 +602,12 @@ func _drop_weapon_from_console(
 func _spawn_pickup(
 	payload: PickupPayload,
 	spawn_position: Vector3,
-	player: Node3D
+	_player: Node3D
 ) -> WorldPickup:
-	var pickup: WorldPickup = (
-		WORLD_PICKUP_SCENE.instantiate() as WorldPickup
+	return _world_pickup_spawner.spawn(
+		payload,
+		spawn_position
 	)
-
-	assert(
-		pickup != null,
-		"WorldPickup scene root must inherit WorldPickup."
-	)
-
-	pickup.setup(payload, player)
-	_gameplay_root.add_child(pickup)
-	pickup.global_position = spawn_position
-
-	return pickup
 	
 
 func _on_weapon_dropped(weapon: WeaponInstance) -> void:
@@ -643,3 +709,7 @@ func get_player() -> CharacterBody3D:
 		return _player
 
 	return null
+
+
+func get_world_pickup_spawner() -> WorldPickupSpawner:
+	return _world_pickup_spawner
