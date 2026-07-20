@@ -30,8 +30,12 @@ func _init(
 	heal_amount = initial_heal_amount
 
 
-func get_definition() -> PickupDefinition:
-	return definition
+func get_presentation() -> PickupPresentationDefinition:
+	return definition.pickup_presentation
+
+
+func get_display_name() -> String:
+	return definition.display_name
 
 
 func try_apply_to(receiver: Node) -> bool:
@@ -47,6 +51,8 @@ func try_apply_to(receiver: Node) -> bool:
 	if health_component == null:
 		return false
 
-	var restored_health: float = health_component.restore_health(heal_amount)
+	var restored_health: float = (
+		health_component.restore_health(heal_amount)
+	)
 
 	return restored_health > 0.0

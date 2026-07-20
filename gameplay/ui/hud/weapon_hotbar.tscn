@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://scs8oxnd8d70"]
+
+[ext_resource type="Texture2D" uid="uid://b0dw7lshujpsn" path="res://assets/placeholder/sprites/weaponbar.png" id="1_dkokj"]
+[ext_resource type="Script" uid="uid://dku2x7rpnwex1" path="res://gameplay/ui/hud/weapon_hotbar.gd" id="1_ppyq7"]
+[ext_resource type="Texture2D" uid="uid://kl2nj6md87um" path="res://assets/placeholder/sprites/gunpointer.png" id="2_c46gt"]
+[ext_resource type="PackedScene" uid="uid://cc5mtunapwg5s" path="res://gameplay/ui/hud/weapon_hotbar_slot.tscn" id="2_cvdt5"]
+
+[node name="WeaponHotbar" type="Control" unique_id=614455021 node_paths=PackedStringArray("wheel_sprite", "slots_root", "pointer_sprite")]
+layout_mode = 3
+anchors_preset = 0
+pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 2
+script = ExtResource("1_ppyq7")
+wheel_sprite = NodePath("WheelSprite")
+slots_root = NodePath("SlotsRoot")
+pointer_sprite = NodePath("Pointer")
+slot_scene = ExtResource("2_cvdt5")
+wheel_radius_px = 150.0
+active_slot_angle_deg = -45.0
+
+[node name="WheelSprite" type="TextureRect" parent="." unique_id=1140072203]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(5, 5)
+pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 2
+texture = ExtResource("1_dkokj")
+expand_mode = 1
+
+[node name="SlotsRoot" type="Control" parent="." unique_id=1052929975]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="Pointer" type="TextureRect" parent="." unique_id=670439639]
+layout_mode = 0
+offset_left = 167.0
+offset_top = -214.0
+offset_right = 207.0
+offset_bottom = -174.0
+scale = Vector2(2.655, 2.655)
+pivot_offset = Vector2(28, 12)
+mouse_filter = 2
+texture = ExtResource("2_c46gt")
+stretch_mode = 5

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PickupPresentationDefinition" format=3 uid="uid://b5etss80otsqw"]
+
+[ext_resource type="Script" uid="uid://xxsh6wggdj6u" path="res://gameplay/interactions/pickups/pickup_presentation_definition.gd" id="1_fngxc"]
+[ext_resource type="Texture2D" uid="uid://dg3l3lgo5byxd" path="res://assets/placeholder/sprites/pistol_pickup.png" id="2_c57vn"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_c57vn"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_c57vn")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
+
+[resource]
+script = ExtResource("1_fngxc")
+sprite_frames = SubResource("SpriteFrames_c57vn")
+metadata/_custom_type_script = "uid://xxsh6wggdj6u"

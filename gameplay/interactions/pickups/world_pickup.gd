@@ -86,8 +86,8 @@ func setup(
 ) -> void:
 	assert(payload != null, "WorldPickup requires a PickupPayload.")
 	assert(
-		payload.get_definition() != null,
-		"WorldPickup payload requires a PickupDefinition."
+		payload.get_presentation() != null,
+		"WorldPickup payload requires a PickupPresentationDefinition."
 	)
 	assert(player != null, "WorldPickup requires a player reference.")
 
@@ -115,7 +115,11 @@ func is_auto_interaction_enabled() -> bool:
 	if _payload == null:
 		return false
 
-	return _payload.is_auto_pickup_enabled()
+	var presentation: PickupPresentationDefinition = (
+		_payload.get_presentation()
+	)
+
+	return presentation.is_auto_pickup_enabled
 
 
 func get_display_name() -> String:
@@ -129,15 +133,17 @@ func _apply_presentation() -> void:
 	if _payload == null:
 		return
 
-	var definition: PickupDefinition = _payload.get_definition()
+	var presentation: PickupPresentationDefinition = (
+		_payload.get_presentation()
+	)
 
-	if definition == null:
+	if presentation == null:
 		return
 
-	_visual.sprite_frames = definition.sprite_frames
-	_visual.animation = definition.animation_name
-	_visual.position = definition.visual_offset
-	_visual.scale = definition.visual_scale
+	_visual.sprite_frames = presentation.sprite_frames
+	_visual.animation = presentation.animation_name
+	_visual.position = presentation.visual_offset
+	_visual.scale = presentation.visual_scale
 	_visual.play()
 
 

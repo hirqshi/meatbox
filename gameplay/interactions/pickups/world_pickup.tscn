@@ -20,6 +20,7 @@ animations = [{
 
 [node name="WorldPickup" type="Node3D" unique_id=331807304]
 script = ExtResource("1_flahs")
+hover_height_m = 0.61
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=888181880]
 collision_layer = 16

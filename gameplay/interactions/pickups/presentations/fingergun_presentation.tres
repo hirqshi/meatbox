@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PickupPresentationDefinition" format=3 uid="uid://bwb3kscjo4fwj"]
+
+[ext_resource type="Script" uid="uid://xxsh6wggdj6u" path="res://gameplay/interactions/pickups/pickup_presentation_definition.gd" id="1_wpbqm"]
+[ext_resource type="Texture2D" uid="uid://dp8i2kdpqovgy" path="res://assets/placeholder/sprites/enemyparts.png" id="2_rhe7d"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_rhe7d"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_rhe7d")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
+
+[resource]
+script = ExtResource("1_wpbqm")
+sprite_frames = SubResource("SpriteFrames_rhe7d")
+metadata/_custom_type_script = "uid://xxsh6wggdj6u"

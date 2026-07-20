@@ -1,4 +1,8 @@
+class_name GameRoot
 extends Node
+
+signal player_ready(player: CharacterBody3D)
+
 
 const PLAYER_SCENE: PackedScene = preload("res://gameplay/player/player.tscn")
 const ENEMY_SCENE: PackedScene = preload("res://gameplay/enemies/enemy.tscn")
@@ -9,6 +13,7 @@ const WORLD_PICKUP_SCENE: PackedScene = preload(
 @export var enemy_spawn_position: Vector3 = Vector3(0.0, 1.0, -10.0)
 @export var default_run_config: RunConfig
 @export var health_pickup_definition: HealthPickupDefinition
+@export var pistol_definition: WeaponDefinition
 @export var player_spawn_position: Vector3 = Vector3(0.0, 3.0, 0.0)
 
 @onready var _gameplay_root: Node = $GameplayRoot
@@ -35,12 +40,26 @@ func _ready() -> void:
 			health_pickup_definition.get_validation_error(),
 		]
 	)
+	assert(
+	pistol_definition != null,
+	"GameRoot requires a pistol WeaponDefinition."
+	)
+	assert(
+		pistol_definition.is_valid_pickup(),
+		"Invalid pistol definition '%s': %s"
+		% [
+			pistol_definition.resource_path,
+			pistol_definition.get_pickup_validation_error(),
+		]
+	)
 	
 	if not RunSession.is_run_active():
 		RunSession.start_run(default_run_config)
 
 	_player = _spawn_player()
 	_setup_player_debug(_player)
+	player_ready.emit(_player)
+
 	_register_debug_commands()
 
 
@@ -84,6 +103,21 @@ func _register_debug_commands() -> void:
 		"Usage: spawn_health <amount>.",
 		_spawn_health_from_console
 	)
+	DeveloperConsole.register_command(
+		&"spawn_weapon",
+		"Usage: spawn_weapon pistol.",
+		_spawn_weapon_from_console
+	)
+	DeveloperConsole.register_command(
+		&"give_weapon",
+		"Usage: give_weapon pistol.",
+		_give_weapon_from_console
+	)
+	DeveloperConsole.register_command(
+		&"drop_weapon",
+		"Usage: drop_weapon.",
+		_drop_weapon_from_console
+	)
 	
 
 func _unregister_debug_commands() -> void:
@@ -115,6 +149,18 @@ func _unregister_debug_commands() -> void:
 		&"spawn_health",
 		_spawn_health_from_console
 	)
+	DeveloperConsole.unregister_command(
+		&"spawn_weapon",
+		_spawn_weapon_from_console
+	)
+	DeveloperConsole.unregister_command(
+		&"give_weapon",
+		_give_weapon_from_console
+	)
+	DeveloperConsole.unregister_command(
+		&"drop_weapon",
+		_drop_weapon_from_console
+	)
 	
 
 func _spawn_player() -> CharacterBody3D:
@@ -130,6 +176,23 @@ func _spawn_player() -> CharacterBody3D:
 
 func _setup_player_debug(player: CharacterBody3D) -> void:
 	DebugStatsOverlay.setup(player)
+
+	var weapon_controller: WeaponController = (
+		player.get_node_or_null("WeaponController")
+		as WeaponController
+	)
+
+	assert(
+		weapon_controller != null,
+		"Player requires a WeaponController."
+	)
+
+	weapon_controller.weapon_dropped.connect(
+		_on_weapon_dropped
+	)
+	weapon_controller.weapon_replaced.connect(
+		_on_weapon_replaced
+	)
 
 
 func _damage_player_from_console(arguments: PackedStringArray) -> void:
@@ -210,7 +273,17 @@ func _respawn_player_from_console(arguments: PackedStringArray) -> void:
 
 	_player = _spawn_player()
 	_setup_player_debug(_player)
+	player_ready.emit(_player)
 
+	DeveloperConsole.log_info(
+		"Respawned player at %.1f, %.1f, %.1f."
+		% [
+			_player.global_position.x,
+			_player.global_position.y,
+			_player.global_position.z,
+		]
+	)
+	
 	DeveloperConsole.log_info(
 		"Respawned player at %.1f, %.1f, %.1f."
 		% [
@@ -330,7 +403,128 @@ func _spawn_health_from_console(arguments: PackedStringArray) -> void:
 			pickup.global_position.z,
 		]
 	)
+	
+	
+func _spawn_weapon_from_console(
+	arguments: PackedStringArray
+) -> void:
+	if arguments.size() != 1:
+		DeveloperConsole.log_error("Usage: spawn_weapon pistol.")
+		return
 
+	var weapon_definition: WeaponDefinition = (
+		_get_weapon_definition_from_argument(arguments[0])
+	)
+
+	if weapon_definition == null:
+		return
+
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var spawn_position: Vector3 = (
+		player.global_position
+		+ player.global_transform.basis.z * -2.0
+		+ Vector3.UP * 2.0
+	)
+
+	var weapon: WeaponInstance = WeaponInstance.new(
+		weapon_definition
+	)
+
+	var pickup: WorldPickup = _spawn_pickup(
+		WeaponPickupPayload.new(weapon),
+		spawn_position,
+		player
+	)
+
+	DeveloperConsole.log_info(
+		"Spawned %s at %.1f, %.1f, %.1f."
+		% [
+			weapon_definition.display_name,
+			pickup.global_position.x,
+			pickup.global_position.y,
+			pickup.global_position.z,
+		]
+	)
+
+
+func _give_weapon_from_console(
+	arguments: PackedStringArray
+) -> void:
+	if arguments.size() != 1:
+		DeveloperConsole.log_error("Usage: give_weapon pistol.")
+		return
+
+	var weapon_definition: WeaponDefinition = (
+		_get_weapon_definition_from_argument(arguments[0])
+	)
+
+	if weapon_definition == null:
+		return
+
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var weapon_controller: WeaponController = (
+		player.get_node_or_null("WeaponController")
+		as WeaponController
+	)
+
+	if weapon_controller == null:
+		DeveloperConsole.log_error("Player WeaponController is unavailable.")
+		return
+
+	var weapon: WeaponInstance = WeaponInstance.new(
+		weapon_definition
+	)
+
+	if not weapon_controller.try_accept_weapon(weapon):
+		DeveloperConsole.log_warning(
+			"Cannot add %s. Select a regular weapon to replace it."
+			% weapon_definition.display_name
+		)
+		return
+
+	DeveloperConsole.log_info(
+		"Gave player %s."
+		% weapon_definition.display_name
+	)
+
+
+func _drop_weapon_from_console(
+	arguments: PackedStringArray
+) -> void:
+	if not arguments.is_empty():
+		DeveloperConsole.log_error("Usage: drop_weapon.")
+		return
+
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var weapon_controller: WeaponController = (
+		player.get_node_or_null("WeaponController")
+		as WeaponController
+	)
+
+	if weapon_controller == null:
+		DeveloperConsole.log_error("Player WeaponController is unavailable.")
+		return
+
+	if not weapon_controller.try_drop_active_regular_weapon():
+		DeveloperConsole.log_warning(
+			"Cannot drop FingerGun or an empty slot."
+		)
+		return
+
+	DeveloperConsole.log_info("Dropped active weapon.")
+	
 
 func _spawn_pickup(
 	payload: PickupPayload,
@@ -353,6 +547,38 @@ func _spawn_pickup(
 	return pickup
 	
 
+func _on_weapon_dropped(weapon: WeaponInstance) -> void:
+	_spawn_weapon_pickup_near_player(weapon)
+
+
+func _on_weapon_replaced(
+	replaced_weapon: WeaponInstance,
+	_new_weapon: WeaponInstance
+) -> void:
+	_spawn_weapon_pickup_near_player(replaced_weapon)
+
+
+func _spawn_weapon_pickup_near_player(
+	weapon: WeaponInstance
+) -> void:
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var spawn_position: Vector3 = (
+		player.global_position
+		+ player.global_transform.basis.z * -2.0
+		+ Vector3.UP * 1.0
+	)
+
+	_spawn_pickup(
+		WeaponPickupPayload.new(weapon),
+		spawn_position,
+		player
+	)
+	
+	
 func _on_enemy_died(
 	enemy: CharacterBody3D,
 	_damage_info: DamageInfo
@@ -373,6 +599,24 @@ func _get_valid_player() -> CharacterBody3D:
 	return null
 
 
+func _get_weapon_definition_from_argument(
+	argument: String
+) -> WeaponDefinition:
+	var weapon_id: StringName = StringName(
+		argument.to_lower()
+	)
+
+	match weapon_id:
+		&"pistol":
+			return pistol_definition
+		_:
+			DeveloperConsole.log_error(
+				"Unknown weapon '%s'. Available: pistol."
+				% argument
+			)
+			return null
+			
+
 func _parse_positive_amount(value: String, label: String) -> float:
 	if not value.is_valid_float():
 		DeveloperConsole.log_error("%s must be a number." % label)
@@ -385,3 +629,10 @@ func _parse_positive_amount(value: String, label: String) -> float:
 		return 0.0
 
 	return amount
+
+
+func get_player() -> CharacterBody3D:
+	if is_instance_valid(_player):
+		return _player
+
+	return null

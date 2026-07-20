@@ -2,31 +2,25 @@ class_name PickupPayload
 extends RefCounted
 
 
-func get_definition() -> PickupDefinition:
+func get_presentation() -> PickupPresentationDefinition:
+	push_error(
+		"PickupPayload '%s' must override get_presentation()."
+		% get_script().resource_path
+	)
 	return null
 
 
 func get_display_name() -> String:
-	var definition: PickupDefinition = get_definition()
-
-	if definition == null:
-		return "Unknown pickup"
-
-	return definition.display_name
+	push_error(
+		"PickupPayload '%s' must override get_display_name()."
+		% get_script().resource_path
+	)
+	return "Unnamed pickup"
 
 
 func try_apply_to(_receiver: Node) -> bool:
 	push_error(
 		"PickupPayload '%s' must override try_apply_to()."
-		% get_display_name()
+		% get_script().resource_path
 	)
 	return false
-
-
-func is_auto_pickup_enabled() -> bool:
-	var definition: PickupDefinition = get_definition()
-
-	if definition == null:
-		return false
-
-	return definition.is_auto_pickup_enabled

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://dfnulgjq013u7"]
+
+[ext_resource type="Script" uid="uid://dk3w7dui6425y" path="res://gameplay/weapons/weapon_definition.gd" id="1_4qe5y"]
+[ext_resource type="Texture2D" uid="uid://dxvct2g1qsju7" path="res://assets/placeholder/sprites/pistolicon.png" id="1_rr2xy"]
+[ext_resource type="Resource" uid="uid://b5etss80otsqw" path="res://gameplay/interactions/pickups/presentations/pistol_presentation.tres" id="2_fxxv0"]
+
+[resource]
+script = ExtResource("1_4qe5y")
+weapon_id = &"pistol"
+display_name = "Pistol"
+damage = 15.0
+fire_rate_shots_per_second = 4.0
+pickup_presentation = ExtResource("2_fxxv0")
+inventory_icon = ExtResource("1_rr2xy")
+metadata/_custom_type_script = "uid://dk3w7dui6425y"

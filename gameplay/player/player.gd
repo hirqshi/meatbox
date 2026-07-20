@@ -8,33 +8,51 @@ signal player_died(damage_info: DamageInfo)
 @onready var _motor: PlayerMotor = $PlayerMotor
 @onready var _look_controller: PlayerLookController = $PlayerLookController
 @onready var _combat: PlayerCombat = $PlayerCombat
+@onready var _weapon_controller: WeaponController = $WeaponController
 @onready var _health_component: HealthComponent = $HealthComponent
-@onready var _camera_juice: CameraJuiceComponent = $CameraPivot/CameraJuiceOffset
+@onready var _camera_juice: CameraJuiceComponent = (
+	$CameraPivot/CameraJuiceOffset
+)
 @onready var _interactor: PlayerInteractor = $PlayerInteractor
+@onready var _interaction_controller: InteractionController = (
+	$InteractionController
+)
 
 
 func _ready() -> void:
 	assert(definition != null, "Player requires a PlayerDefinition.")
-	assert(definition.validate(), "PlayerDefinition contains invalid values.")
+	assert(
+		definition.validate(),
+		"PlayerDefinition contains invalid values."
+	)
 
 	_motor.definition = definition
 	_look_controller.definition = definition
 
 	_motor.setup(self)
 	_look_controller.setup(self)
+
 	_camera_juice.setup(self, definition)
+	_camera_juice.set_is_enabled(true)
 	_motor.landed.connect(_camera_juice.register_landing)
+
 	_combat.setup(self)
+	_weapon_controller.setup(self)
+
 	_interactor.setup(self)
+	_interaction_controller.setup(self)
+
 	_interactor.interactable_entered.connect(
 		_on_interactable_entered
 	)
-	
+
 	_health_component.died.connect(_on_health_component_died)
 	_health_component.health_changed.connect(_on_health_changed)
-	_health_component.damaged.connect(_on_health_component_damaged)
+	_health_component.damaged.connect(
+		_on_health_component_damaged
+	)
 	_health_component.damage_blocked.connect(_on_damage_blocked)
-	
+
 	player_ready.emit(self)
 
 
@@ -47,11 +65,15 @@ func _input(event: InputEvent) -> void:
 
 	_motor.handle_input(event)
 	_look_controller.handle_input(event)
+
+	_weapon_controller.handle_input(event)
 	_combat.handle_input(event)
+	_interaction_controller.handle_input(event)
 
 
 func _physics_process(delta: float) -> void:
 	var is_console_open: bool = DeveloperConsole.is_open()
+
 	_camera_juice.set_is_enabled(not is_console_open)
 
 	if _health_component.is_dead():
@@ -97,28 +119,30 @@ func kill_for_debug() -> void:
 		return
 
 	apply_debug_damage(_health_component.get_current_health())
-	
-	
-func _on_health_component_died(damage_info: DamageInfo) -> void:
+
+
+func _on_health_component_died(
+	damage_info: DamageInfo
+) -> void:
 	_motor.set_is_enabled(false)
 	_look_controller.set_is_enabled(false)
 	_combat.set_is_enabled(false)
+	_weapon_controller.set_is_enabled(false)
+	_interaction_controller.set_is_enabled(false)
 	_camera_juice.set_is_enabled(false)
-	
+
 	DeveloperConsole.log_info(
 		"Player died. Source: %s"
 		% _get_damage_source_name(damage_info.source)
 	)
+
 	player_died.emit(damage_info)
 
 
-func _get_damage_source_name(source: Node) -> String:
-	if source == null:
-		return "unknown"
-
-	return source.name
-
-func _on_health_changed(current_health: float, max_health: float) -> void:
+func _on_health_changed(
+	current_health: float,
+	max_health: float
+) -> void:
 	DeveloperConsole.log_info(
 		"Player health: %.1f / %.1f"
 		% [current_health, max_health]
@@ -131,11 +155,16 @@ func _on_health_component_damaged(
 ) -> void:
 	DeveloperConsole.log_info(
 		"Player took %.1f damage from %s."
-		% [applied_damage, _get_damage_source_name(damage_info.source)]
+		% [
+			applied_damage,
+			_get_damage_source_name(damage_info.source),
+		]
 	)
 
 
-func _on_damage_blocked(damage_info: DamageInfo) -> void:
+func _on_damage_blocked(
+	damage_info: DamageInfo
+) -> void:
 	DeveloperConsole.log_info(
 		"Player damage blocked from %s."
 		% _get_damage_source_name(damage_info.source)
@@ -145,7 +174,14 @@ func _on_damage_blocked(damage_info: DamageInfo) -> void:
 func _on_interactable_entered(
 	interactable: WorldInteractable
 ) -> void:
-	if not interactable.is_auto_interaction_enabled:
+	if not interactable.is_auto_interaction_enabled():
 		return
 
 	interactable.try_interact(_interactor.get_receiver())
+
+
+func _get_damage_source_name(source: Node) -> String:
+	if source == null:
+		return "unknown"
+
+	return source.name

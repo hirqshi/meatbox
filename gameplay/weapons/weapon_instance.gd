@@ -7,14 +7,17 @@ var next_fire_time_s: float = 0.0
 
 
 func _init(initial_definition: WeaponDefinition) -> void:
-	assert(initial_definition != null, "WeaponInstance requires a WeaponDefinition.")
 	assert(
-	initial_definition.is_valid(),
-	"Invalid weapon definition '%s': %s"
-	% [
-		initial_definition.resource_path,
-		initial_definition.get_validation_error(),
-	]
+		initial_definition != null,
+		"WeaponInstance requires a WeaponDefinition."
+	)
+	assert(
+		initial_definition.is_valid(),
+		"Invalid weapon definition '%s': %s"
+		% [
+			initial_definition.resource_path,
+			initial_definition.get_validation_error(),
+		]
 	)
 
 	definition = initial_definition

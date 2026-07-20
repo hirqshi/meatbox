@@ -1,6 +1,8 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://cdfkqifkr7ic"]
 
+[ext_resource type="Texture2D" uid="uid://dw6c2sd563npq" path="res://assets/placeholder/sprites/fingergunicon.png" id="1_177jy"]
 [ext_resource type="Script" uid="uid://dk3w7dui6425y" path="res://gameplay/weapons/weapon_definition.gd" id="1_dgrdm"]
+[ext_resource type="Resource" uid="uid://bwb3kscjo4fwj" path="res://gameplay/interactions/pickups/presentations/fingergun_presentation.tres" id="2_qipir"]
 
 [resource]
 script = ExtResource("1_dgrdm")
@@ -8,4 +10,6 @@ weapon_id = &"finger_gun"
 display_name = "Finger Gun"
 damage = 3.0
 fire_rate_shots_per_second = 2.0
+pickup_presentation = ExtResource("2_qipir")
+inventory_icon = ExtResource("1_177jy")
 metadata/_custom_type_script = "uid://dk3w7dui6425y"

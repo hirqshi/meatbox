@@ -6,11 +6,13 @@
 [ext_resource type="Script" uid="uid://cv3r1xcka7l23" path="res://gameplay/player/player_motor.gd" id="3_mo1cy"]
 [ext_resource type="Script" uid="uid://iv34mwbcjp68" path="res://gameplay/player/player_look_controller.gd" id="4_ahkyy"]
 [ext_resource type="Resource" uid="uid://bdpwhef5vej4t" path="res://data/players/default_player_camera_juice.tres" id="4_d14h3"]
-[ext_resource type="Script" uid="uid://00qor2khbme1" path="res://gameplay/combat/player_combat.gd" id="5_2uk1t"]
+[ext_resource type="Script" uid="uid://00qor2khbme1" path="res://gameplay/player/combat/player_combat.gd" id="5_2uk1t"]
 [ext_resource type="Resource" uid="uid://cdfkqifkr7ic" path="res://data/weapons/finger_gun_definition.tres" id="6_mo1cy"]
 [ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="7_e85hc"]
+[ext_resource type="Script" uid="uid://dce3n4hcpupu5" path="res://gameplay/player/combat/weapon_controller.gd" id="8_lh4hn"]
 [ext_resource type="Resource" uid="uid://cbh47ncfbf3hi" path="res://data/health/default_player_health.tres" id="8_s4pxm"]
 [ext_resource type="Script" uid="uid://c855flukj7gf0" path="res://gameplay/interactions/player_interactor.gd" id="11_d14h3"]
+[ext_resource type="Script" uid="uid://cvhnqar4o4wk" path="res://gameplay/player/interaction_controller.gd" id="12_fty7g"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e85hc"]
 
@@ -50,12 +52,20 @@ camera_juice = NodePath("../CameraPivot/CameraJuiceOffset")
 
 [node name="PlayerCombat" type="Node" parent="." unique_id=62656332 node_paths=PackedStringArray("aim_camera")]
 script = ExtResource("5_2uk1t")
-finger_gun_definition = ExtResource("6_mo1cy")
 aim_camera = NodePath("../CameraPivot/CameraJuiceOffset/Camera3D")
+
+[node name="WeaponController" type="Node" parent="." unique_id=1761646984 node_paths=PackedStringArray("combat")]
+script = ExtResource("8_lh4hn")
+finger_gun_definition = ExtResource("6_mo1cy")
+combat = NodePath("../PlayerCombat")
 
 [node name="HealthComponent" type="Node" parent="." unique_id=1992799174]
 script = ExtResource("7_e85hc")
 definition = ExtResource("8_s4pxm")
+
+[node name="InteractionController" type="Node" parent="." unique_id=1357472937 node_paths=PackedStringArray("interactor")]
+script = ExtResource("12_fty7g")
+interactor = NodePath("../PlayerInteractor")
 
 [node name="PlayerInteractor" type="Area3D" parent="." unique_id=1946670095]
 collision_layer = 256

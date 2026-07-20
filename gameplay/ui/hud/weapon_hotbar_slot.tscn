@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://cc5mtunapwg5s"]
+
+[ext_resource type="Texture2D" uid="uid://bp3nnpos7fvb5" path="res://assets/placeholder/sprites/weaponslot.png" id="1_2m1ga"]
+[ext_resource type="Script" uid="uid://dl0ed6pymnvpv" path="res://gameplay/ui/hud/weapon_hotbar_slot.gd" id="1_7cjk0"]
+
+[node name="WeaponHotbarSlot" type="Control" unique_id=1105190416 node_paths=PackedStringArray("frame_sprite", "weapon_icon")]
+layout_mode = 3
+anchors_preset = 0
+pivot_offset = Vector2(0.5, 0.5)
+mouse_filter = 2
+script = ExtResource("1_7cjk0")
+frame_sprite = NodePath("FrameSprite")
+weapon_icon = NodePath("WeaponIcon")
+active_modulate = Color(0.57, 0, 0, 1)
+inactive_modulate = Color(0, 0, 0, 0.81960785)
+empty_modulate = Color(0, 0, 0, 0.54901963)
+
+[node name="FrameSprite" type="TextureRect" parent="." unique_id=107841654]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(2.6, 2.6)
+pivot_offset = Vector2(20, 20)
+mouse_filter = 2
+texture = ExtResource("1_2m1ga")
+
+[node name="WeaponIcon" type="TextureRect" parent="." unique_id=363167963]
+z_index = 9
+layout_mode = 0
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+scale = Vector2(3, 3)
+pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
