@@ -9,6 +9,9 @@ signal player_died(damage_info: DamageInfo)
 @onready var _look_controller: PlayerLookController = $PlayerLookController
 @onready var _combat: PlayerCombat = $PlayerCombat
 @onready var _weapon_controller: WeaponController = $WeaponController
+@onready var _weapon_view: WeaponView = (
+	$CameraPivot/CameraJuiceOffset/Camera3D/WeaponView
+)
 @onready var _health_component: HealthComponent = $HealthComponent
 @onready var _camera_juice: CameraJuiceComponent = (
 	$CameraPivot/CameraJuiceOffset
@@ -25,7 +28,11 @@ func _ready() -> void:
 		definition.validate(),
 		"PlayerDefinition contains invalid values."
 	)
-
+	assert(
+		_weapon_view != null,
+		"Player requires a WeaponView under Camera3D."
+	)
+	
 	_motor.definition = definition
 	_look_controller.definition = definition
 
@@ -38,6 +45,10 @@ func _ready() -> void:
 
 	_combat.setup(self)
 	_weapon_controller.setup(self)
+	_weapon_view.setup(
+	_weapon_controller,
+	_combat
+	)
 
 	_interactor.setup(self)
 	_interaction_controller.setup(self)

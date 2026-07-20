@@ -67,6 +67,9 @@ var max_reserve_ammo: int = 0
 	"suffix:s"
 ) var reload_duration_s: float = 0.0
 
+@export_category("View Presentation")
+@export var view_presentation: WeaponPresentationDefinition
+
 @export_category("World Pickup")
 @export var pickup_presentation: PickupPresentationDefinition
 
@@ -119,7 +122,20 @@ func get_validation_error() -> String:
 			"reload_duration_s must be greater than zero "
 			+ "when uses_ammo is enabled."
 		)
+		
+	if view_presentation != null:
+		var presentation_error: String = (
+			view_presentation.get_validation_error(
+				uses_ammo
+			)
+		)
 
+		if not presentation_error.is_empty():
+			return (
+				"Invalid view_presentation: %s"
+				% presentation_error
+			)
+			
 	return ""
 
 

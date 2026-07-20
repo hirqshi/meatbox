@@ -3,6 +3,48 @@
 [ext_resource type="Texture2D" uid="uid://dw6c2sd563npq" path="res://assets/placeholder/sprites/fingergunicon.png" id="1_177jy"]
 [ext_resource type="Script" uid="uid://dk3w7dui6425y" path="res://gameplay/weapons/weapon_definition.gd" id="1_dgrdm"]
 [ext_resource type="Resource" uid="uid://bwb3kscjo4fwj" path="res://gameplay/interactions/pickups/presentations/fingergun_presentation.tres" id="2_qipir"]
+[ext_resource type="Script" uid="uid://cp10hw5j2dix6" path="res://gameplay/weapons/weapon_presentation_definition.gd" id="4_ua4mq"]
+[ext_resource type="Texture2D" uid="uid://de70hxxqi8c6w" path="res://assets/placeholder/sprites/finger_gun.png" id="5_bruyp"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_t0q81"]
+atlas = ExtResource("5_bruyp")
+region = Rect2(0, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gm1g3"]
+atlas = ExtResource("5_bruyp")
+region = Rect2(128, 0, 128, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bwjmn"]
+atlas = ExtResource("5_bruyp")
+region = Rect2(256, 0, 128, 128)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_wkg85"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_t0q81")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gm1g3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bwjmn")
+}],
+"loop": 0,
+"name": &"fire",
+"speed": 15.0
+}]
+
+[sub_resource type="Resource" id="Resource_cii1l"]
+script = ExtResource("4_ua4mq")
+sprite_frames = SubResource("SpriteFrames_wkg85")
+view_offset = Vector3(0.6, -0.45, -0.85)
+metadata/_custom_type_script = "uid://cp10hw5j2dix6"
 
 [resource]
 script = ExtResource("1_dgrdm")
@@ -10,6 +52,7 @@ weapon_id = &"finger_gun"
 display_name = "Finger Gun"
 damage = 3.0
 fire_rate_shots_per_second = 2.0
+view_presentation = SubResource("Resource_cii1l")
 pickup_presentation = ExtResource("2_qipir")
 inventory_icon = ExtResource("1_177jy")
 metadata/_custom_type_script = "uid://dk3w7dui6425y"

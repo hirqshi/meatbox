@@ -6,10 +6,15 @@ signal ammo_changed(
 	reserve_ammo: int
 )
 
+signal reload_started
+signal reload_finished
+signal reload_cancelled
+
 var definition: WeaponDefinition
 var current_ammo: int
 var reserve_ammo: int
 var next_fire_time_s: float = 0.0
+var is_reloading: bool = false
 
 
 func _init(initial_definition: WeaponDefinition) -> void:
@@ -32,6 +37,9 @@ func _init(initial_definition: WeaponDefinition) -> void:
 
 
 func can_fire(current_time_s: float) -> bool:
+	if is_reloading:
+		return false
+
 	if current_time_s < next_fire_time_s:
 		return false
 
@@ -49,6 +57,64 @@ func consume_shot(current_time_s: float) -> void:
 		ammo_changed.emit(current_ammo, reserve_ammo)
 
 	next_fire_time_s = current_time_s + _get_fire_interval_s()
+
+
+func can_begin_reload() -> bool:
+	if not definition.uses_ammo:
+		return false
+
+	if is_reloading:
+		return false
+
+	if current_ammo >= definition.magazine_size:
+		return false
+
+	return reserve_ammo > 0
+
+
+func begin_reload() -> bool:
+	if not can_begin_reload():
+		return false
+
+	is_reloading = true
+	reload_started.emit()
+
+	return true
+
+
+func finish_reload() -> bool:
+	if not is_reloading:
+		return false
+
+	is_reloading = false
+
+	var missing_magazine_ammo: int = (
+		definition.magazine_size
+		- current_ammo
+	)
+
+	var transferred_ammo: int = mini(
+		missing_magazine_ammo,
+		reserve_ammo
+	)
+
+	current_ammo += transferred_ammo
+	reserve_ammo -= transferred_ammo
+
+	ammo_changed.emit(current_ammo, reserve_ammo)
+	reload_finished.emit()
+
+	return transferred_ammo > 0
+
+
+func cancel_reload() -> bool:
+	if not is_reloading:
+		return false
+
+	is_reloading = false
+	reload_cancelled.emit()
+
+	return true
 
 
 func add_reserve_ammo(amount: int) -> int:
@@ -75,34 +141,6 @@ func add_reserve_ammo(amount: int) -> int:
 	ammo_changed.emit(current_ammo, reserve_ammo)
 
 	return accepted_amount
-
-
-func reload() -> bool:
-	if not definition.uses_ammo:
-		return false
-
-	if current_ammo >= definition.magazine_size:
-		return false
-
-	if reserve_ammo <= 0:
-		return false
-
-	var missing_magazine_ammo: int = (
-		definition.magazine_size
-		- current_ammo
-	)
-
-	var transferred_ammo: int = mini(
-		missing_magazine_ammo,
-		reserve_ammo
-	)
-
-	current_ammo += transferred_ammo
-	reserve_ammo -= transferred_ammo
-
-	ammo_changed.emit(current_ammo, reserve_ammo)
-
-	return true
 
 
 func _get_fire_interval_s() -> float:

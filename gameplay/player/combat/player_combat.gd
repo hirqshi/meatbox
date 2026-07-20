@@ -7,6 +7,9 @@ signal weapon_hit(
 	hit_position: Vector3,
 	did_hit_damageable: bool
 )
+signal empty_magazine_fire_attempted(
+	weapon: WeaponInstance
+)
 
 @export var aim_camera: Camera3D
 
@@ -77,6 +80,13 @@ func _try_fire_active_weapon() -> void:
 	var current_time_s: float = (
 		Time.get_ticks_msec() / 1000.0
 	)
+
+	if _active_weapon.definition.uses_ammo:
+		if _active_weapon.current_ammo <= 0:
+			empty_magazine_fire_attempted.emit(
+				_active_weapon
+			)
+			return
 
 	if not _active_weapon.can_fire(current_time_s):
 		return

@@ -11,6 +11,9 @@ signal weapon_replaced(
 	new_weapon: WeaponInstance
 )
 signal weapon_dropped(weapon: WeaponInstance)
+signal weapon_reload_started(weapon: WeaponInstance)
+signal weapon_reload_finished(weapon: WeaponInstance)
+signal weapon_reload_cancelled(weapon: WeaponInstance)
 signal active_weapon_ammo_changed(
 	weapon: WeaponInstance,
 	current_ammo: int,
@@ -33,6 +36,8 @@ var _owner_body: CharacterBody3D
 var _inventory: WeaponInventory
 var _is_enabled: bool = true
 var _observed_active_weapon: WeaponInstance
+var _reload_timer: Timer
+var _reloading_weapon: WeaponInstance
 
 
 func setup(owner_body: CharacterBody3D) -> void:
@@ -68,6 +73,16 @@ func setup(owner_body: CharacterBody3D) -> void:
 	)
 	_inventory.active_weapon_changed.connect(
 		_on_active_weapon_changed
+	)
+	_reload_timer = Timer.new()
+	_reload_timer.one_shot = true
+	_reload_timer.timeout.connect(
+		_on_reload_timer_timeout
+	)
+	add_child(_reload_timer)
+
+	combat.empty_magazine_fire_attempted.connect(
+		_on_empty_magazine_fire_attempted
 	)
 	_observe_active_weapon(
 		_inventory.get_active_weapon()
@@ -207,11 +222,70 @@ func try_reload_active_weapon() -> bool:
 		_inventory.get_active_weapon()
 	)
 
-	if active_weapon == null:
+	return _try_start_reload(active_weapon)
+	
+
+func _try_start_reload(
+	weapon: WeaponInstance
+) -> bool:
+	if weapon == null:
 		return false
 
-	return active_weapon.reload()
-	
+	if not weapon.begin_reload():
+		return false
+
+	_reloading_weapon = weapon
+
+	_reload_timer.start(
+		weapon.definition.reload_duration_s
+	)
+
+	weapon_reload_started.emit(weapon)
+
+	return true
+
+
+func _cancel_active_reload() -> void:
+	if _reloading_weapon == null:
+		return
+
+	_reload_timer.stop()
+	_reloading_weapon.cancel_reload()
+
+	weapon_reload_cancelled.emit(
+		_reloading_weapon
+	)
+
+	_reloading_weapon = null
+
+
+func _on_reload_timer_timeout() -> void:
+	if _reloading_weapon == null:
+		return
+
+	var reloaded_weapon: WeaponInstance = (
+		_reloading_weapon
+	)
+
+	_reloading_weapon = null
+
+	if not reloaded_weapon.finish_reload():
+		return
+
+	weapon_reload_finished.emit(reloaded_weapon)
+
+
+func _on_empty_magazine_fire_attempted(
+	weapon: WeaponInstance
+) -> void:
+	if _inventory == null:
+		return
+
+	if weapon != _inventory.get_active_weapon():
+		return
+
+	_try_start_reload(weapon)
+
 
 func try_accept_weapon(new_weapon: WeaponInstance) -> bool:
 	if _inventory == null or new_weapon == null:
@@ -290,6 +364,10 @@ func _on_active_weapon_changed(
 	active_slot_index: int,
 	active_weapon: WeaponInstance
 ) -> void:
+	if _reloading_weapon != null:
+		if _reloading_weapon != active_weapon:
+			_cancel_active_reload()
+
 	_observe_active_weapon(active_weapon)
 
 	combat.set_active_weapon(active_weapon)
@@ -354,3 +432,7 @@ func _on_active_weapon_ammo_changed(
 		current_ammo,
 		reserve_ammo
 	)
+
+
+func _exit_tree() -> void:
+	_cancel_active_reload()

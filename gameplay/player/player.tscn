@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://iv34mwbcjp68" path="res://gameplay/player/player_look_controller.gd" id="4_ahkyy"]
 [ext_resource type="Resource" uid="uid://bdpwhef5vej4t" path="res://data/players/default_player_camera_juice.tres" id="4_d14h3"]
 [ext_resource type="Script" uid="uid://00qor2khbme1" path="res://gameplay/player/combat/player_combat.gd" id="5_2uk1t"]
+[ext_resource type="Script" uid="uid://bugirhj7im1bb" path="res://gameplay/weapons/weapon_view.gd" id="5_chlpi"]
 [ext_resource type="Resource" uid="uid://cdfkqifkr7ic" path="res://data/weapons/finger_gun_definition.tres" id="6_mo1cy"]
 [ext_resource type="Script" uid="uid://f2cwm7hkrexq" path="res://gameplay/health/health_component.gd" id="7_e85hc"]
 [ext_resource type="Script" uid="uid://dce3n4hcpupu5" path="res://gameplay/player/combat/weapon_controller.gd" id="8_lh4hn"]
@@ -47,6 +48,13 @@ target_position = Vector3(0, 0, -2.2)
 collision_mask = 16
 collide_with_areas = true
 collide_with_bodies = false
+
+[node name="WeaponView" type="Node3D" parent="CameraPivot/CameraJuiceOffset/Camera3D" unique_id=174353256]
+script = ExtResource("5_chlpi")
+
+[node name="Visual" type="AnimatedSprite3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView" unique_id=1867542891]
+no_depth_test = true
+texture_filter = 1
 
 [node name="PlayerMotor" type="Node" parent="." unique_id=979616820]
 script = ExtResource("3_mo1cy")
