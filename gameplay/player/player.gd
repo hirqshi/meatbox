@@ -80,6 +80,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_motor.physics_update(delta)
+	_interaction_controller.physics_update()
 
 	if is_console_open:
 		return

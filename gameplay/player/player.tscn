@@ -28,6 +28,9 @@ definition = ExtResource("2_2uk1t")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=245688374]
 shape = SubResource("CapsuleShape3D_e85hc")
 
+[node name="PickupPresentationAnchor" type="Marker3D" parent="." unique_id=755088826]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.80644864, 0)
+
 [node name="CameraPivot" type="Node3D" parent="." unique_id=35238968]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 
@@ -38,6 +41,12 @@ camera = NodePath("Camera3D")
 
 [node name="Camera3D" type="Camera3D" parent="CameraPivot/CameraJuiceOffset" unique_id=1163109433]
 current = true
+
+[node name="InteractionAimRay" type="RayCast3D" parent="CameraPivot/CameraJuiceOffset/Camera3D" unique_id=1100587804]
+target_position = Vector3(0, 0, -2.2)
+collision_mask = 16
+collide_with_areas = true
+collide_with_bodies = false
 
 [node name="PlayerMotor" type="Node" parent="." unique_id=979616820]
 script = ExtResource("3_mo1cy")
@@ -63,9 +72,10 @@ combat = NodePath("../PlayerCombat")
 script = ExtResource("7_e85hc")
 definition = ExtResource("8_s4pxm")
 
-[node name="InteractionController" type="Node" parent="." unique_id=1357472937 node_paths=PackedStringArray("interactor")]
+[node name="InteractionController" type="Node" parent="." unique_id=1357472937 node_paths=PackedStringArray("interactor", "aim_ray")]
 script = ExtResource("12_fty7g")
 interactor = NodePath("../PlayerInteractor")
+aim_ray = NodePath("../CameraPivot/CameraJuiceOffset/Camera3D/InteractionAimRay")
 
 [node name="PlayerInteractor" type="Area3D" parent="." unique_id=1946670095]
 collision_layer = 256

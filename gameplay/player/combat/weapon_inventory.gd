@@ -105,6 +105,34 @@ func replace_weapon_at(
 	return replaced_weapon
 
 
+func get_nearest_occupied_regular_slot(
+	from_slot_index: int,
+	direction: int = 1
+) -> int:
+	if direction == 0:
+		return -1
+
+	if get_regular_slot_capacity() <= 0:
+		return -1
+
+	var normalized_direction: int = signi(direction)
+	var slot_count: int = _slots.size()
+
+	for step: int in range(1, slot_count):
+		var candidate_slot_index: int = posmod(
+			from_slot_index + normalized_direction * step,
+			slot_count
+		)
+
+		if candidate_slot_index <= 0:
+			continue
+
+		if _slots[candidate_slot_index] != null:
+			return candidate_slot_index
+
+	return -1
+
+
 func select_slot(slot_index: int) -> bool:
 	if not _is_valid_slot_index(slot_index):
 		return false

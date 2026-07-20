@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="HealthPickupDefinition" format=3 uid="uid://cgygtwfc4hn66"]
 
-[ext_resource type="Script" uid="uid://ccvhg87gfhgj6" path="res://gameplay/interactions/pickups/definitions/health_pickup_definition.gd" id="1_5cmhb"]
+[ext_resource type="Script" uid="uid://ccvhg87gfhgj6" path="res://gameplay/interactions/pickups/health_pickup_definition.gd" id="1_5cmhb"]
 [ext_resource type="Script" uid="uid://xxsh6wggdj6u" path="res://gameplay/interactions/pickups/pickup_presentation_definition.gd" id="1_6vjms"]
 [ext_resource type="Texture2D" uid="uid://duwxi7fp5oqft" path="res://assets/placeholder/sprites/health_pickup.png" id="2_6vjms"]
 

@@ -18,6 +18,9 @@ signal weapon_dropped(weapon: WeaponInstance)
 @export_category("Slots")
 @export_range(0, 1000, 1) var initial_regular_slot_capacity: int = 3
 
+@export_category("Pickup Behavior")
+@export var equip_weapon_on_pickup: bool = true
+
 @export_category("Dependencies")
 @export var combat: PlayerCombat
 
@@ -150,22 +153,41 @@ func try_accept_weapon(new_weapon: WeaponInstance) -> bool:
 		return false
 
 	if _inventory.try_add_weapon(new_weapon):
+		if equip_weapon_on_pickup:
+			var added_slot_index: int = (
+				_find_weapon_slot_index(new_weapon)
+			)
+
+			if added_slot_index != -1:
+				_inventory.select_slot(added_slot_index)
+
 		return true
 
-	var active_slot_index: int = _inventory.get_active_slot_index()
+	var replacement_slot_index: int = _inventory.get_active_slot_index()
 
-	if active_slot_index == 0:
+	if replacement_slot_index == 0:
+		replacement_slot_index = (
+			_inventory.get_nearest_occupied_regular_slot(
+				replacement_slot_index,
+				1
+			)
+		)
+
+	if replacement_slot_index == -1:
 		return false
 
 	var replaced_weapon: WeaponInstance = (
 		_inventory.replace_weapon_at(
-			active_slot_index,
+			replacement_slot_index,
 			new_weapon
 		)
 	)
 
 	if replaced_weapon == null:
 		return false
+
+	if equip_weapon_on_pickup:
+		_inventory.select_slot(replacement_slot_index)
 
 	weapon_replaced.emit(replaced_weapon, new_weapon)
 
@@ -208,3 +230,16 @@ func _on_active_weapon_changed(
 		active_slot_index,
 		active_weapon
 	)
+
+
+func _find_weapon_slot_index(weapon: WeaponInstance) -> int:
+	if weapon == null:
+		return -1
+
+	for slot_index: int in range(
+		_inventory.get_slot_count()
+	):
+		if _inventory.get_weapon_at(slot_index) == weapon:
+			return slot_index
+
+	return -1

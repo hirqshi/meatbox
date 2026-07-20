@@ -9,6 +9,7 @@
 [ext_resource type="Resource" uid="uid://1nvkpj6eueh3" path="res://data/enemies/combat_target_health.tres" id="4_bca70"]
 [ext_resource type="Resource" uid="uid://dfnulgjq013u7" path="res://data/weapons/pistol.tres" id="4_k63du"]
 [ext_resource type="Script" uid="uid://bkdiiix2ra714" path="res://core/combat/hurtbox_component.gd" id="4_n6w2t"]
+[ext_resource type="Script" uid="uid://bqlsemoeidgbd" path="res://gameplay/interactions/pickups/spawning/world_pickup_spawner.gd" id="10_cylga"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_esgjc"]
 albedo_texture = ExtResource("3_0krdv")
@@ -92,6 +93,10 @@ shape = SubResource("CylinderShape3D_6m30h")
 transform = Transform3D(1, 0, 0, 0, -0.18101287, 0.98348075, 0, -0.98348075, -0.18101287, 0, 11.368366, 0)
 
 [node name="GameplayRoot" type="Node" parent="." unique_id=1234810301]
+
+[node name="WorldPickupSpawner" type="Node" parent="." unique_id=238975352 node_paths=PackedStringArray("gameplay_root")]
+script = ExtResource("10_cylga")
+gameplay_root = NodePath("../GameplayRoot")
 
 [node name="UiRoot" type="CanvasLayer" parent="." unique_id=487258339]
 

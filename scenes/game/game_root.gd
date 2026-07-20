@@ -17,6 +17,9 @@ const WORLD_PICKUP_SCENE: PackedScene = preload(
 @export var player_spawn_position: Vector3 = Vector3(0.0, 3.0, 0.0)
 
 @onready var _gameplay_root: Node = $GameplayRoot
+@onready var _world_pickup_spawner: WorldPickupSpawner = (
+	$WorldPickupSpawner
+)
 
 var _player: CharacterBody3D
 var _active_enemies: Array[Enemy] = []
@@ -57,6 +60,7 @@ func _ready() -> void:
 		RunSession.start_run(default_run_config)
 
 	_player = _spawn_player()
+	_world_pickup_spawner.setup(_player)
 	_setup_player_debug(_player)
 	player_ready.emit(_player)
 
@@ -272,6 +276,7 @@ func _respawn_player_from_console(arguments: PackedStringArray) -> void:
 		_player.queue_free()
 
 	_player = _spawn_player()
+	_world_pickup_spawner.setup(_player)
 	_setup_player_debug(_player)
 	player_ready.emit(_player)
 
@@ -284,14 +289,6 @@ func _respawn_player_from_console(arguments: PackedStringArray) -> void:
 		]
 	)
 	
-	DeveloperConsole.log_info(
-		"Respawned player at %.1f, %.1f, %.1f."
-		% [
-			_player.global_position.x,
-			_player.global_position.y,
-			_player.global_position.z,
-		]
-	)
 
 
 func _spawn_enemy_from_console(arguments: PackedStringArray) -> void:
@@ -548,15 +545,25 @@ func _spawn_pickup(
 	
 
 func _on_weapon_dropped(weapon: WeaponInstance) -> void:
-	_spawn_weapon_pickup_near_player(weapon)
+	var pickup: WorldPickup = (
+		_world_pickup_spawner.spawn_dropped_weapon(weapon)
+	)
+
+	if pickup == null:
+		push_error("Failed to spawn dropped weapon pickup.")
 
 
 func _on_weapon_replaced(
 	replaced_weapon: WeaponInstance,
 	_new_weapon: WeaponInstance
 ) -> void:
-	_spawn_weapon_pickup_near_player(replaced_weapon)
+	var pickup: WorldPickup = (
+		_world_pickup_spawner.spawn_dropped_weapon(replaced_weapon)
+	)
 
+	if pickup == null:
+		push_error("Failed to spawn replaced weapon pickup.")
+		
 
 func _spawn_weapon_pickup_near_player(
 	weapon: WeaponInstance
