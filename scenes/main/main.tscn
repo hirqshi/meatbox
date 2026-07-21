@@ -2,10 +2,11 @@
 
 [ext_resource type="PackedScene" uid="uid://7tb6ts2fb4j6" path="res://scenes/game/game_root.tscn" id="1_iuonh"]
 [ext_resource type="Script" uid="uid://cegcc07qu3ocm" path="res://scenes/main/main.gd" id="1_k2fmo"]
-[ext_resource type="Texture2D" uid="uid://c3q2qy6gpbob0" path="res://assets/placeholder/sprites/crosshairdot.png" id="2_k2fmo"]
 [ext_resource type="PackedScene" uid="uid://scs8oxnd8d70" path="res://gameplay/ui/hud/weapon_hotbar.tscn" id="4_l3cfh"]
 [ext_resource type="PackedScene" uid="uid://c8ku4vggn8udc" path="res://gameplay/ui/hud/ammo/ammo_presenter.tscn" id="5_ow5a4"]
 [ext_resource type="PackedScene" uid="uid://cffvh8vbxa48a" path="res://gameplay/ui/hud/pickup_presentation/pickup_manipulator_presenter.tscn" id="6_hujxm"]
+[ext_resource type="PackedScene" uid="uid://dtwcwrb204ky7" path="res://gameplay/ui/hud/damage_indicator/damage_direction_indicator.tscn" id="7_hujxm"]
+[ext_resource type="PackedScene" uid="uid://bmiixh2lurl24" path="res://gameplay/ui/hud/crosshair/crosshair_controller.tscn" id="8_yyfjg"]
 
 [node name="Main" type="Control" unique_id=455401206]
 layout_mode = 3
@@ -94,20 +95,20 @@ offset_transform_enabled = true
 offset_transform_visual_only = false
 mouse_filter = 2
 
-[node name="CrosshairDot" type="TextureRect" parent="ScreenSplit/HudRoot/CrosshairRoot" unique_id=1567709165]
+[node name="DamageDirectionIndicator" parent="ScreenSplit/HudRoot/CrosshairRoot" unique_id=158823745 instance=ExtResource("7_hujxm")]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
-scale = Vector2(3.5, 3.5)
-pivot_offset = Vector2(20, 20)
-mouse_filter = 2
-texture = ExtResource("2_k2fmo")
+
+[node name="CrosshairController" parent="ScreenSplit/HudRoot/CrosshairRoot" unique_id=1358994070 instance=ExtResource("8_yyfjg")]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5

@@ -39,6 +39,46 @@ extends Resource
 @export_range(1.0, 4.0, 0.05) var landing_run_offset_multiplier: float = 1.8
 @export_range(0.0, 1.0, 0.01) var landing_run_bob_suppression_bonus: float = 0.2
 
+@export_category("Damage Feedback")
+@export_range(0.0, 1.0, 0.001)
+var damage_feedback_full_strength_health_ratio: float = 0.3
+
+@export_range(0.0, 1.0, 0.001, "suffix:m")
+var damage_kick_min_position_m: float = 0.008
+
+@export_range(0.0, 1.0, 0.001, "suffix:m")
+var damage_kick_max_position_m: float = 0.035
+
+@export_range(0.0, 20.0, 0.1, "suffix:deg")
+var damage_kick_min_rotation_deg: float = 0.45
+
+@export_range(0.0, 20.0, 0.1, "suffix:deg")
+var damage_kick_max_rotation_deg: float = 3.0
+
+@export_range(0.0, 1.0, 0.001, "suffix:s")
+var damage_kick_hold_duration_s: float = 0.02
+
+@export_range(0.1, 100.0, 0.1, "suffix:1/s")
+var damage_kick_return_speed: float = 16.0
+
+@export_range(0.0, 1.0, 0.001, "suffix:m")
+var damage_shake_min_position_m: float = 0.002
+
+@export_range(0.0, 1.0, 0.001, "suffix:m")
+var damage_shake_max_position_m: float = 0.012
+
+@export_range(0.0, 20.0, 0.1, "suffix:deg")
+var damage_shake_min_rotation_deg: float = 0.18
+
+@export_range(0.0, 20.0, 0.1, "suffix:deg")
+var damage_shake_max_rotation_deg: float = 1.2
+
+@export_range(0.0, 1.0, 0.001, "suffix:s")
+var damage_shake_duration_s: float = 0.13
+
+@export_range(1.0, 120.0, 0.1, "suffix:Hz")
+var damage_shake_frequency_hz: float = 30.0
+
 
 func get_validation_error() -> String:
 	if fov_response_speed <= 0.0:

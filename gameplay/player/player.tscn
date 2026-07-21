@@ -56,9 +56,11 @@ script = ExtResource("5_chlpi")
 
 [node name="RecoilOffset" type="Node3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView/MotionOffset" unique_id=1294177243]
 
-[node name="EquipOffset" type="Node3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView/MotionOffset/RecoilOffset" unique_id=1412814951]
+[node name="ReloadOffset" type="Node3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView/MotionOffset/RecoilOffset" unique_id=1331835566]
 
-[node name="Visual" type="AnimatedSprite3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView/MotionOffset/RecoilOffset/EquipOffset" unique_id=1867542891]
+[node name="EquipOffset" type="Node3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView/MotionOffset/RecoilOffset/ReloadOffset" unique_id=1412814951]
+
+[node name="Visual" type="AnimatedSprite3D" parent="CameraPivot/CameraJuiceOffset/Camera3D/WeaponView/MotionOffset/RecoilOffset/ReloadOffset/EquipOffset" unique_id=1867542891]
 no_depth_test = true
 texture_filter = 1
 

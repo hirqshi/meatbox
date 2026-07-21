@@ -6,15 +6,24 @@ extends Area3D
 
 @export_category("Damage")
 @export var damage_part_id: StringName = &"body"
-@export_range(0.01, 100.0, 0.01) var damage_multiplier: float = 1.0
+
+@export_range(0.01, 100.0, 0.01)
+var damage_multiplier: float = 1.0
 
 
 func _ready() -> void:
-	assert(damageable != null, "HurtboxComponent requires a Damageable target.")
+	assert(
+		damageable != null,
+		"HurtboxComponent requires a Damageable target."
+	)
 	assert(
 		damage_multiplier > 0.0,
 		"HurtboxComponent damage_multiplier must be greater than zero."
 	)
+
+
+func is_weak_point() -> bool:
+	return damage_multiplier > 1.0
 
 
 func create_damage_info(
@@ -22,7 +31,10 @@ func create_damage_info(
 	hit_position: Vector3,
 	hit_normal: Vector3
 ) -> DamageInfo:
-	assert(base_damage_info != null, "HurtboxComponent requires DamageInfo.")
+	assert(
+		base_damage_info != null,
+		"HurtboxComponent requires DamageInfo."
+	)
 
 	return DamageInfo.new(
 		base_damage_info.amount * damage_multiplier,

@@ -9,7 +9,9 @@ extends Control
 	$ScreenSplit/GameplayFrame/GameplayViewportContainer/GameplayViewport/GameRoot
 )
 
-@onready var _pickup_manipulator_presenter: PickupManipulatorPresenter = $ScreenSplit/HudRoot/PickupManipulatorPresenter
+@onready var _pickup_manipulator_presenter: PickupManipulatorPresenter = (
+	$ScreenSplit/HudRoot/PickupManipulatorPresenter
+)
 
 @onready var _weapon_hotbar: WeaponHotbar = (
 	$ScreenSplit/HudRoot/WeaponHotbar
@@ -17,6 +19,14 @@ extends Control
 
 @onready var _ammo_presenter: AmmoPresenter = (
 	$ScreenSplit/HudRoot/AmmoPresenter
+)
+
+@onready var _damage_direction_indicator: DamageDirectionIndicator = (
+	$ScreenSplit/HudRoot/CrosshairRoot/DamageDirectionIndicator
+)
+
+@onready var _crosshair_controller: CrosshairController = (
+	$ScreenSplit/HudRoot/CrosshairRoot/CrosshairController
 )
 
 
@@ -40,6 +50,14 @@ func _ready() -> void:
 	assert(
 		_ammo_presenter != null,
 		"Main requires an AmmoPresenter."
+	)
+	assert(
+		_damage_direction_indicator != null,
+		"Main requires a DamageDirectionIndicator."
+	)
+	assert(
+		_crosshair_controller != null,
+		"Main requires a CrosshairController."
 	)
 
 	_game_root.player_ready.connect(
@@ -71,3 +89,5 @@ func _on_game_root_player_ready(
 
 	_weapon_hotbar.setup(weapon_controller)
 	_ammo_presenter.setup(player)
+	_damage_direction_indicator.setup(player)
+	_crosshair_controller.setup(player)

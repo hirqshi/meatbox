@@ -88,6 +88,25 @@ var landing_spring_damping: float = 20.0
 @export_range(0.0, 60.0, 0.01, "suffix:1/s")
 var landing_impact_response_speed: float = 7.0
 
+@export_category("Reload Motion")
+@export var reload_position_offset_m: Vector3 = Vector3(
+	0.0,
+	-0.18,
+	0.0
+)
+
+@export var reload_rotation_offset_degrees: Vector3 = Vector3(
+	0.0,
+	0.0,
+	-14.0
+)
+
+@export_range(0.1, 100.0, 0.1, "suffix:1/s")
+var reload_enter_speed: float = 16.0
+
+@export_range(0.1, 100.0, 0.1, "suffix:1/s")
+var reload_return_speed: float = 12.0
+
 @export_category("Fire Juice")
 @export var fire_kick_position_m: Vector3 = Vector3(
 	0.0,
@@ -116,6 +135,9 @@ var landing_impact_response_speed: float = 7.0
 @export_range(0.0, 1.0, 0.01, "suffix:s")
 var fire_shake_duration_s: float = 0.06
 
+@export_range(1.0, 120.0, 0.1, "suffix:Hz")
+var fire_shake_frequency_hz: float = 45.0
+
 @export_range(0.0, 100.0, 0.01, "suffix:1/s")
 var recoil_return_speed: float = 11.81
 
@@ -131,6 +153,52 @@ var equip_duration_s: float = 0.34
 
 @export_range(0.01, 3.0, 0.01, "suffix:s")
 var unequip_duration_s: float = 0.2
+
+@export_category("Crosshair")
+@export var crosshair_presentation: CrosshairPresentationDefinition
+
+@export_category("Camera Fire Feedback")
+@export var fire_camera_kick_position_m: Vector3 = Vector3(
+	0.0,
+	-0.012,
+	0.045
+)
+
+@export var fire_camera_kick_rotation_degrees: Vector3 = Vector3(
+	-1.25,
+	0.35,
+	0.2
+)
+
+@export_range(0.0, 1.0, 0.001, "suffix:s")
+var fire_camera_kick_hold_duration_s: float = 0.025
+
+@export_range(0.1, 100.0, 0.1, "suffix:1/s")
+var fire_camera_kick_return_speed: float = 22.0
+
+@export var fire_camera_shake_position_m: Vector3 = Vector3(
+	0.002,
+	0.002,
+	0.002
+)
+
+@export var fire_camera_shake_rotation_degrees: Vector3 = Vector3(
+	0.18,
+	0.12,
+	0.18
+)
+
+@export_range(0.0, 1.0, 0.001, "suffix:s")
+var fire_camera_shake_duration_s: float = 0.06
+
+@export_range(1.0, 120.0, 0.1, "suffix:Hz")
+var fire_camera_shake_frequency_hz: float = 45.0
+
+@export_range(0.0, 1.0, 0.001, "suffix:m")
+var fire_camera_max_kick_position_m: float = 0.16
+
+@export_range(0.0, 45.0, 0.1, "suffix:deg")
+var fire_camera_max_kick_rotation_deg: float = 12.0
 
 
 func get_validation_error(
@@ -171,7 +239,18 @@ func get_validation_error(
 		return (
 			"vertical_tilt_max_speed_mps must be greater than zero."
 		)
+		
+	if crosshair_presentation != null:
+		var crosshair_error: String = (
+			crosshair_presentation.get_validation_error()
+		)
 
+		if not crosshair_error.is_empty():
+			return (
+				"Invalid crosshair_presentation: %s"
+				% crosshair_error
+			)
+			
 	return ""
 
 

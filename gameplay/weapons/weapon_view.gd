@@ -12,11 +12,14 @@ enum EquipState {
 @onready var _recoil_offset: Node3D = (
 	$MotionOffset/RecoilOffset
 )
+@onready var _reload_offset: Node3D = (
+	$MotionOffset/RecoilOffset/ReloadOffset
+)
 @onready var _equip_offset: Node3D = (
-	$MotionOffset/RecoilOffset/EquipOffset
+	$MotionOffset/RecoilOffset/ReloadOffset/EquipOffset
 )
 @onready var _visual: AnimatedSprite3D = (
-	$MotionOffset/RecoilOffset/EquipOffset/Visual
+	$MotionOffset/RecoilOffset/ReloadOffset/EquipOffset/Visual
 )
 
 var _weapon_controller: WeaponController
@@ -52,6 +55,16 @@ var _landing_velocity_y: float = 0.0
 var _recoil_position: Vector3 = Vector3.ZERO
 var _recoil_rotation_rad: Vector3 = Vector3.ZERO
 var _shake_remaining_s: float = 0.0
+
+var _is_reload_pose_active: bool = false
+var _current_reload_position: Vector3 = Vector3.ZERO
+var _current_reload_rotation_rad: Vector3 = Vector3.ZERO
+
+var _shake_sample_elapsed_s: float = 0.0
+var _shake_position_target: Vector3 = Vector3.ZERO
+var _shake_rotation_target_rad: Vector3 = Vector3.ZERO
+var _shake_position: Vector3 = Vector3.ZERO
+var _shake_rotation_rad: Vector3 = Vector3.ZERO
 
 var _random: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -114,6 +127,7 @@ func physics_update(delta: float) -> void:
 
 	_update_equip_transition(delta)
 	_update_motion(delta)
+	_update_reload_pose(delta)
 	_update_recoil(delta)
 
 
@@ -181,6 +195,14 @@ func _request_weapon_change(
 
 
 func _apply_pending_weapon() -> void:
+	_is_reload_pose_active = false
+	_current_reload_position = Vector3.ZERO
+	_current_reload_rotation_rad = Vector3.ZERO
+
+	if _reload_offset != null:
+		_reload_offset.position = Vector3.ZERO
+		_reload_offset.rotation = Vector3.ZERO
+		
 	_active_weapon = _pending_weapon
 	_pending_weapon = null
 
@@ -479,54 +501,108 @@ func _update_recoil(delta: float) -> void:
 		recoil_weight
 	)
 
-	var shake_position: Vector3 = Vector3.ZERO
-	var shake_rotation_rad: Vector3 = Vector3.ZERO
-
 	if _shake_remaining_s > 0.0:
 		_shake_remaining_s = maxf(
 			_shake_remaining_s - delta,
 			0.0
 		)
+		_shake_sample_elapsed_s += delta
 
-		var shake_weight: float = (
-			_shake_remaining_s
-			/ maxf(
-				_presentation.fire_shake_duration_s,
-				0.001
-			)
+		var sample_interval_s: float = 1.0 / maxf(
+			_presentation.fire_shake_frequency_hz,
+			1.0
 		)
 
-		shake_position = Vector3(
-			_random.randf_range(-1.0, 1.0)
-			* _presentation.fire_shake_position_m.x,
-			_random.randf_range(-1.0, 1.0)
-			* _presentation.fire_shake_position_m.y,
-			_random.randf_range(-1.0, 1.0)
-			* _presentation.fire_shake_position_m.z
-		) * shake_weight
+		if _shake_sample_elapsed_s >= sample_interval_s:
+			_shake_sample_elapsed_s = 0.0
 
-		shake_rotation_rad = _to_radians(
-			Vector3(
+			_shake_position_target = Vector3(
 				_random.randf_range(-1.0, 1.0)
-				* _presentation.fire_shake_rotation_degrees.x,
+				* _presentation.fire_shake_position_m.x,
 				_random.randf_range(-1.0, 1.0)
-				* _presentation.fire_shake_rotation_degrees.y,
+				* _presentation.fire_shake_position_m.y,
 				_random.randf_range(-1.0, 1.0)
-				* _presentation.fire_shake_rotation_degrees.z
+				* _presentation.fire_shake_position_m.z
 			)
-		) * shake_weight
+
+			_shake_rotation_target_rad = _to_radians(
+				Vector3(
+					_random.randf_range(-1.0, 1.0)
+					* _presentation.fire_shake_rotation_degrees.x,
+					_random.randf_range(-1.0, 1.0)
+					* _presentation.fire_shake_rotation_degrees.y,
+					_random.randf_range(-1.0, 1.0)
+					* _presentation.fire_shake_rotation_degrees.z
+				)
+			)
+
+		var fade_weight: float = _shake_remaining_s / maxf(
+			_presentation.fire_shake_duration_s,
+			0.001
+		)
+		var sample_response_weight: float = _get_smoothing_weight(
+			_presentation.fire_shake_frequency_hz * 2.5,
+			delta
+		)
+
+		_shake_position = _shake_position.lerp(
+			_shake_position_target * fade_weight,
+			sample_response_weight
+		)
+		_shake_rotation_rad = _shake_rotation_rad.lerp(
+			_shake_rotation_target_rad * fade_weight,
+			sample_response_weight
+		)
+	else:
+		_shake_position = Vector3.ZERO
+		_shake_rotation_rad = Vector3.ZERO
+		_shake_position_target = Vector3.ZERO
+		_shake_rotation_target_rad = Vector3.ZERO
 
 	_recoil_offset.position = (
 		_recoil_position
-		+ shake_position
+		+ _shake_position
 	)
 
 	_recoil_offset.rotation = (
 		_recoil_rotation_rad
-		+ shake_rotation_rad
+		+ _shake_rotation_rad
 	)
 
 
+func _update_reload_pose(delta: float) -> void:
+	if _presentation == null:
+		return
+
+	var target_position: Vector3 = Vector3.ZERO
+	var target_rotation_rad: Vector3 = Vector3.ZERO
+	var response_speed: float = _presentation.reload_return_speed
+
+	if _is_reload_pose_active:
+		target_position = _presentation.reload_position_offset_m
+		target_rotation_rad = _to_radians(
+			_presentation.reload_rotation_offset_degrees
+		)
+		response_speed = _presentation.reload_enter_speed
+
+	var response_weight: float = _get_smoothing_weight(
+		response_speed,
+		delta
+	)
+
+	_current_reload_position = _current_reload_position.lerp(
+		target_position,
+		response_weight
+	)
+	_current_reload_rotation_rad = _current_reload_rotation_rad.lerp(
+		target_rotation_rad,
+		response_weight
+	)
+
+	_reload_offset.position = _current_reload_position
+	_reload_offset.rotation = _current_reload_rotation_rad
+	
+	
 func _on_active_weapon_changed(
 	_active_slot_index: int,
 	weapon: WeaponInstance
@@ -551,7 +627,8 @@ func _on_weapon_fired(
 		_presentation.fire_kick_rotation_degrees
 	)
 	_shake_remaining_s = _presentation.fire_shake_duration_s
-
+	_shake_sample_elapsed_s = 0.0
+	
 	_play_animation(
 		_presentation.fire_animation_name,
 		true
@@ -567,6 +644,8 @@ func _on_weapon_reload_started(
 	if _presentation == null:
 		return
 
+	_is_reload_pose_active = true
+
 	_play_animation(
 		_presentation.reload_animation_name,
 		true
@@ -579,6 +658,7 @@ func _on_weapon_reload_finished(
 	if weapon != _active_weapon:
 		return
 
+	_is_reload_pose_active = false
 	_play_default_animation()
 
 
@@ -588,6 +668,7 @@ func _on_weapon_reload_cancelled(
 	if weapon != _active_weapon:
 		return
 
+	_is_reload_pose_active = false
 	_play_default_animation()
 
 

@@ -4,5 +4,5 @@
 
 [resource]
 script = ExtResource("1_4wkb8")
-contact_range_m = 1.75
+contact_damage = 1.0
 metadata/_custom_type_script = "uid://dsbnpbecuy0jj"

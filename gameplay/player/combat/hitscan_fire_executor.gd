@@ -6,7 +6,8 @@ const MAX_RAY_HITS: int = 16
 signal shot_resolved(
 	request: FireRequest,
 	hit_position: Vector3,
-	did_hit_damageable: bool
+	did_hit_damageable: bool,
+	did_hit_weak_point: bool
 )
 
 
@@ -76,7 +77,12 @@ func fire(request: FireRequest) -> void:
 		excluded_rids.append(hit_rid)
 
 	if selected_hurtbox == null or selected_damageable == null:
-		shot_resolved.emit(request, fallback_hit_position, false)
+		shot_resolved.emit(
+			request,
+			fallback_hit_position,
+			false,
+			false
+		)
 		return
 
 	var base_damage_info: DamageInfo = DamageInfo.new(
@@ -94,4 +100,14 @@ func fire(request: FireRequest) -> void:
 	)
 
 	selected_damageable.receive_damage(modified_damage_info)
-	shot_resolved.emit(request, selected_hit_position, true)
+
+	var did_hit_weak_point: bool = (
+		selected_hurtbox.is_weak_point()
+	)
+
+	shot_resolved.emit(
+		request,
+		selected_hit_position,
+		true,
+		did_hit_weak_point
+	)

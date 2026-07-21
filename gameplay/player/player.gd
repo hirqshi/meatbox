@@ -49,7 +49,9 @@ func _ready() -> void:
 		_combat,
 		self
 	)
-
+	
+	_combat.weapon_fired.connect(_on_weapon_fired)
+	
 	_motor.landed.connect(_camera_juice.register_landing)
 	_motor.landed.connect(_weapon_view.register_landing)
 
@@ -146,6 +148,10 @@ func kill_for_debug() -> void:
 	apply_debug_damage(_health_component.get_current_health())
 
 
+func _on_weapon_fired(weapon: WeaponInstance) -> void:
+	_camera_juice.play_weapon_fire_feedback(weapon)
+
+
 func _on_health_component_died(
 	damage_info: DamageInfo
 ) -> void:
@@ -178,6 +184,11 @@ func _on_health_component_damaged(
 	damage_info: DamageInfo,
 	applied_damage: float
 ) -> void:
+	_camera_juice.play_damage_feedback(
+		damage_info,
+		applied_damage
+	)
+
 	DeveloperConsole.log_info(
 		"Player took %.1f damage from %s."
 		% [

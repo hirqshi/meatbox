@@ -5,7 +5,8 @@ signal weapon_fired(weapon: WeaponInstance)
 signal weapon_hit(
 	weapon: WeaponInstance,
 	hit_position: Vector3,
-	did_hit_damageable: bool
+	did_hit_damageable: bool,
+	did_hit_weak_point: bool
 )
 signal empty_magazine_fire_attempted(
 	weapon: WeaponInstance
@@ -106,10 +107,12 @@ func _try_fire_active_weapon() -> void:
 func _on_hitscan_shot_resolved(
 	request: FireRequest,
 	hit_position: Vector3,
-	did_hit_damageable: bool
+	did_hit_damageable: bool,
+	did_hit_weak_point: bool
 ) -> void:
 	weapon_hit.emit(
 		request.weapon,
 		hit_position,
-		did_hit_damageable
+		did_hit_damageable,
+		did_hit_weak_point
 	)

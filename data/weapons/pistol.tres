@@ -4,7 +4,26 @@
 [ext_resource type="Texture2D" uid="uid://dxvct2g1qsju7" path="res://assets/placeholder/sprites/pistolicon.png" id="1_rr2xy"]
 [ext_resource type="Resource" uid="uid://b5etss80otsqw" path="res://gameplay/interactions/pickups/presentations/pistol_presentation.tres" id="2_fxxv0"]
 [ext_resource type="Script" uid="uid://cp10hw5j2dix6" path="res://gameplay/weapons/weapon_presentation_definition.gd" id="4_cii1l"]
+[ext_resource type="Texture2D" uid="uid://bmcj45wims0af" path="res://assets/placeholder/sprites/hitmarker.png" id="4_snkot"]
+[ext_resource type="Texture2D" uid="uid://c3q2qy6gpbob0" path="res://assets/placeholder/sprites/crosshairdot.png" id="5_qmstv"]
 [ext_resource type="Texture2D" uid="uid://dp30pfvxmo4as" path="res://assets/placeholder/sprites/pistol_sheet2.png" id="5_wkg85"]
+[ext_resource type="Texture2D" uid="uid://dxfw44rvumt5t" path="res://assets/placeholder/sprites/crosshair.png" id="6_7et3l"]
+[ext_resource type="Script" uid="uid://c5q7ccmxjp8la" path="res://gameplay/ui/hud/crosshair/crosshair_presentation_definition.gd" id="7_0wt6q"]
+
+[sub_resource type="Resource" id="Resource_p7lxo"]
+script = ExtResource("7_0wt6q")
+crosshair_texture = ExtResource("4_snkot")
+split_mode = 5
+crosshair_scale = 3.0
+is_dot_enabled = false
+dot_texture = ExtResource("5_qmstv")
+dot_scale = 3.0
+hitmarker_texture = ExtResource("6_7et3l")
+hitmarker_scale = 3.0
+fire_separation_px = 24.0
+switch_enter_separation_px = 25.0
+is_reload_rotation_enabled = true
+metadata/_custom_type_script = "uid://c5q7ccmxjp8la"
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_cii1l"]
 atlas = ExtResource("5_wkg85")
@@ -62,6 +81,7 @@ animations = [{
 [sub_resource type="Resource" id="Resource_chlpi"]
 script = ExtResource("4_cii1l")
 sprite_frames = SubResource("SpriteFrames_ppyq7")
+crosshair_presentation = SubResource("Resource_p7lxo")
 metadata/_custom_type_script = "uid://cp10hw5j2dix6"
 
 [resource]
