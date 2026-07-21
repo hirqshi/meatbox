@@ -12,6 +12,7 @@ var _body: CharacterBody3D
 var _is_enabled: bool = true
 var _was_on_floor: bool = false
 var _jump_buffer_remaining_s: float = 0.0
+var _stat_modifiers: PlayerStatModifiers
 
 
 func setup(body: CharacterBody3D) -> void:
@@ -21,6 +22,12 @@ func setup(body: CharacterBody3D) -> void:
 
 	_body = body
 	_was_on_floor = _body.is_on_floor()
+
+
+func set_stat_modifiers(
+	stat_modifiers: PlayerStatModifiers
+) -> void:
+	_stat_modifiers = stat_modifiers
 
 
 func set_is_enabled(value: bool) -> void:
@@ -74,11 +81,20 @@ func _update_jump_buffer(delta: float) -> void:
 
 func _apply_vertical_movement(delta: float) -> void:
 	if _body.is_on_floor():
-		if not DeveloperConsole.is_open() and _jump_buffer_remaining_s > 0.0:
-			_body.velocity.y = definition.jump_velocity_mps
+		if (
+			not DeveloperConsole.is_open()
+			and _jump_buffer_remaining_s > 0.0
+		):
+			_body.velocity.y = (
+				definition.jump_velocity_mps
+				+ _get_jump_velocity_bonus_m_per_s()
+			)
 			_jump_buffer_remaining_s = 0.0
 		elif _body.velocity.y < 0.0:
-			_body.velocity.y = -definition.ground_stick_velocity_mps
+			_body.velocity.y = (
+				-definition.ground_stick_velocity_mps
+			)
+
 		return
 
 	_body.velocity.y -= definition.gravity_mps2 * delta
@@ -105,7 +121,13 @@ func _apply_horizontal_movement(delta: float) -> void:
 	world_direction.y = 0.0
 	world_direction = world_direction.normalized()
 
-	var target_velocity: Vector3 = world_direction * definition.run_speed_mps
+	var target_velocity: Vector3 = (
+	world_direction
+	* (
+		definition.run_speed_mps
+		+ _get_move_speed_bonus_m_per_s()
+	)
+	)
 	var acceleration: float = definition.ground_acceleration_mps2
 
 	if not _body.is_on_floor():
@@ -134,3 +156,17 @@ func _apply_horizontal_movement(delta: float) -> void:
 		target_velocity.z,
 		acceleration * delta
 	)
+
+func _get_move_speed_bonus_m_per_s() -> float:
+	if _stat_modifiers == null:
+		return 0.0
+
+	return _stat_modifiers.get_move_speed_bonus_m_per_s()
+
+
+func _get_jump_velocity_bonus_m_per_s() -> float:
+	if _stat_modifiers == null:
+		return 0.0
+
+	return _stat_modifiers.get_jump_velocity_bonus_m_per_s()
+	

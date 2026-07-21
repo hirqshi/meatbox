@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="OrganDefinition" format=3 uid="uid://cx04s4w3hmsam"]
+
+[ext_resource type="Texture2D" uid="uid://d4axgg7lddyiw" path="res://assets/placeholder/sprites/goo3.png" id="1_3abvq"]
+[ext_resource type="Script" uid="uid://t76ufc4erdmf" path="res://gameplay/organs/organ_definition.gd" id="1_ktvsk"]
+
+[resource]
+script = ExtResource("1_ktvsk")
+organ_id = &"jump"
+display_name = "spring bladder"
+description = "jump higher"
+icon = ExtResource("1_3abvq")
+grid_height_cells = 2
+jump_velocity_bonus_m_per_s = 6.0
+metadata/_custom_type_script = "uid://t76ufc4erdmf"

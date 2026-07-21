@@ -14,6 +14,8 @@
 [ext_resource type="Resource" uid="uid://cbh47ncfbf3hi" path="res://data/health/default_player_health.tres" id="8_s4pxm"]
 [ext_resource type="Script" uid="uid://c855flukj7gf0" path="res://gameplay/interactions/player_interactor.gd" id="11_d14h3"]
 [ext_resource type="Script" uid="uid://cvhnqar4o4wk" path="res://gameplay/player/interaction_controller.gd" id="12_fty7g"]
+[ext_resource type="Script" uid="uid://cbumtx1635jhr" path="res://gameplay/organs/player_stat_modifiers.gd" id="14_k8msr"]
+[ext_resource type="Script" uid="uid://dy2b3lmrkhgrb" path="res://gameplay/organs/organ_inventory_component.gd" id="15_2iayx"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e85hc"]
 
@@ -92,6 +94,12 @@ definition = ExtResource("8_s4pxm")
 script = ExtResource("12_fty7g")
 interactor = NodePath("../PlayerInteractor")
 aim_ray = NodePath("../CameraPivot/CameraJuiceOffset/Camera3D/InteractionAimRay")
+
+[node name="PlayerStatModifiers" type="Node" parent="." unique_id=1847711996]
+script = ExtResource("14_k8msr")
+
+[node name="OrganInventoryComponent" type="Node" parent="." unique_id=855664224]
+script = ExtResource("15_2iayx")
 
 [node name="PlayerInteractor" type="Area3D" parent="." unique_id=1946670095]
 collision_layer = 256

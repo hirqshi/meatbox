@@ -334,16 +334,34 @@ func physics_update(delta: float) -> void:
 		_body.velocity.z
 	).length()
 
-	var speed_ratio: float = clampf(
-		horizontal_speed_mps / _movement_definition.run_speed_mps,
+	var base_run_speed_mps: float = maxf(
+		_movement_definition.run_speed_mps,
+		0.001
+	)
+
+	var raw_speed_ratio: float = (
+		horizontal_speed_mps / base_run_speed_mps
+	)
+
+	var visual_speed_ratio: float = clampf(
+		raw_speed_ratio,
 		0.0,
 		1.0
 	)
 
+	var bob_speed_ratio: float = clampf(
+		raw_speed_ratio,
+		0.0,
+		definition.max_bob_speed_ratio
+	)
+
 	_update_landing_spring(delta)
-	_update_fov(delta, speed_ratio)
-	_update_bob(delta, speed_ratio)
-	_update_movement_bob_weight(delta, speed_ratio)
+	_update_fov(delta, visual_speed_ratio)
+	_update_bob(delta, bob_speed_ratio)
+	_update_movement_bob_weight(
+		delta,
+		visual_speed_ratio
+	)
 	_update_rotation(delta)
 	_update_feedback(delta)
 	_apply_transform()

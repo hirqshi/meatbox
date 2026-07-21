@@ -12,6 +12,7 @@ var _current_health: float = 0.0
 var _elapsed_game_time_s: float = 0.0
 var _next_damage_time_by_source_id: Dictionary[int, float] = {}
 var _is_dead: bool = false
+var _max_health_bonus: float = 0.0
 
 
 func _ready() -> void:
@@ -25,8 +26,11 @@ func _ready() -> void:
 		]
 	)
 
-	_current_health = definition.max_health
-	health_changed.emit(_current_health, definition.max_health)
+	_current_health = get_max_health()
+	health_changed.emit(
+		_current_health,
+		get_max_health()
+	)
 
 
 func _physics_process(delta: float) -> void:
@@ -55,11 +59,36 @@ func get_current_health() -> float:
 	return _current_health
 
 
+func set_max_health_bonus(value: float) -> void:
+	var previous_max_health: float = get_max_health()
+
+	_max_health_bonus = value
+
+	var new_max_health: float = get_max_health()
+
+	if _current_health > new_max_health:
+		_current_health = new_max_health
+
+	if is_equal_approx(
+		previous_max_health,
+		new_max_health
+	):
+		return
+
+	health_changed.emit(
+		_current_health,
+		new_max_health
+	)
+
+
 func get_max_health() -> float:
 	if definition == null:
 		return 0.0
 
-	return definition.max_health
+	return maxf(
+		definition.max_health + _max_health_bonus,
+		1.0
+	)
 
 
 func get_health_normalized() -> float:
@@ -80,11 +109,14 @@ func restore_full_health() -> void:
 		return
 
 	_is_dead = false
-	_current_health = definition.max_health
+	_current_health = get_max_health()
 	_next_damage_time_by_source_id.clear()
 
-	health_changed.emit(_current_health, definition.max_health)
-
+	health_changed.emit(
+		_current_health,
+		get_max_health()
+	)
+	
 
 func restore_health(amount: float) -> float:
 	if _is_dead or amount <= 0.0:
@@ -92,15 +124,17 @@ func restore_health(amount: float) -> float:
 
 	var restored_health: float = minf(
 		amount,
-		definition.max_health - _current_health
+		get_max_health() - _current_health
 	)
 
 	if restored_health <= 0.0:
 		return 0.0
 
 	_current_health += restored_health
-	health_changed.emit(_current_health, definition.max_health)
-
+	health_changed.emit(
+		_current_health,
+		get_max_health()
+	)
 	return restored_health
 	
 

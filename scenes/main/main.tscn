@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" uid="uid://cffvh8vbxa48a" path="res://gameplay/ui/hud/pickup_presentation/pickup_manipulator_presenter.tscn" id="6_hujxm"]
 [ext_resource type="PackedScene" uid="uid://dtwcwrb204ky7" path="res://gameplay/ui/hud/damage_indicator/damage_direction_indicator.tscn" id="7_hujxm"]
 [ext_resource type="PackedScene" uid="uid://bmiixh2lurl24" path="res://gameplay/ui/hud/crosshair/crosshair_controller.tscn" id="8_yyfjg"]
+[ext_resource type="PackedScene" uid="uid://swlpj2lh7ppb" path="res://gameplay/organs/organ_pile.tscn" id="9_a8run"]
+[ext_resource type="PackedScene" uid="uid://cerjpwq2mcsda" path="res://gameplay/organs/ui/organ_pile_item.tscn" id="10_ouso4"]
 
 [node name="Main" type="Control" unique_id=455401206]
 layout_mode = 3
@@ -50,6 +52,7 @@ render_target_update_mode = 4
 [node name="GameRoot" parent="ScreenSplit/GameplayFrame/GameplayViewportContainer/GameplayViewport" unique_id=824725833 instance=ExtResource("1_iuonh")]
 
 [node name="MeatboxPanel" type="Panel" parent="ScreenSplit" unique_id=2098883742]
+z_index = -13
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
@@ -76,6 +79,7 @@ offset_bottom = -14.0
 grow_vertical = 0
 
 [node name="AmmoPresenter" parent="ScreenSplit/HudRoot" unique_id=1922032186 instance=ExtResource("5_ow5a4")]
+z_index = 63
 offset_left = 1193.0
 offset_top = 930.0
 offset_right = 1193.0
@@ -112,3 +116,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
+
+[node name="OrganPile" parent="ScreenSplit/HudRoot" unique_id=920227281 instance=ExtResource("9_a8run")]
+offset_left = 1280.0
+offset_top = 216.0
+offset_right = 1920.0
+offset_bottom = 1086.0
+organ_pile_item_scene = ExtResource("10_ouso4")

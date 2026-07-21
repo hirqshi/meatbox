@@ -10,6 +10,9 @@
 [ext_resource type="Resource" uid="uid://1rv30rlwo7j5" path="res://gameplay/interactions/pickups/definitions/universal_ammo.tres" id="4_c2lvh"]
 [ext_resource type="Resource" uid="uid://dfnulgjq013u7" path="res://data/weapons/pistol.tres" id="4_k63du"]
 [ext_resource type="Script" uid="uid://bkdiiix2ra714" path="res://core/combat/hurtbox_component.gd" id="4_n6w2t"]
+[ext_resource type="Resource" uid="uid://cetrox6iwhk4g" path="res://data/organs/max_health_organ.tres" id="6_i88f8"]
+[ext_resource type="Resource" uid="uid://44kgh5jv5rm3" path="res://data/organs/movement_speed_organ.tres" id="7_h5onw"]
+[ext_resource type="Resource" uid="uid://cx04s4w3hmsam" path="res://data/organs/jump_height_organ.tres" id="8_f3gwi"]
 [ext_resource type="Script" uid="uid://bqlsemoeidgbd" path="res://gameplay/interactions/pickups/spawning/world_pickup_spawner.gd" id="10_cylga"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_esgjc"]
@@ -35,10 +38,15 @@ material = SubResource("StandardMaterial3D_rx5uh")
 
 [node name="GameRoot" type="Node" unique_id=824725833]
 script = ExtResource("1_dw3h0")
+enemy_spawn_position = null
 default_run_config = ExtResource("2_esgjc")
 health_pickup_definition = ExtResource("3_elccf")
 universal_ammo_definition = ExtResource("4_c2lvh")
 pistol_definition = ExtResource("4_k63du")
+player_spawn_position = null
+max_health_organ_definition = ExtResource("6_i88f8")
+move_speed_organ_definition = ExtResource("7_h5onw")
+jump_height_organ_definition = ExtResource("8_f3gwi")
 
 [node name="WorldRoot" type="Node3D" parent="." unique_id=2101649433]
 

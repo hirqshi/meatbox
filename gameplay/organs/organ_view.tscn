@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dldxsjd7ccqbs"]
+
+[ext_resource type="Script" uid="uid://dpdmwr8jtmnyy" path="res://gameplay/organs/organ_view.gd" id="1_fbucs"]
+
+[node name="OrganView" type="TextureRect" unique_id=571708471]
+z_index = 21
+script = ExtResource("1_fbucs")

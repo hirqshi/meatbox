@@ -17,6 +17,11 @@ const WORLD_PICKUP_SCENE: PackedScene = preload(
 @export var pistol_definition: WeaponDefinition
 @export var player_spawn_position: Vector3 = Vector3(0.0, 3.0, 0.0)
 
+@export_category("Debug Organs")
+@export var max_health_organ_definition: OrganDefinition
+@export var move_speed_organ_definition: OrganDefinition
+@export var jump_height_organ_definition: OrganDefinition
+
 @onready var _gameplay_root: Node = $GameplayRoot
 @onready var _world_pickup_spawner: WorldPickupSpawner = (
 	$WorldPickupSpawner
@@ -67,6 +72,18 @@ func _ready() -> void:
 			pistol_definition.resource_path,
 			pistol_definition.get_pickup_validation_error(),
 		]
+	)
+	_validate_organ_definition(
+	max_health_organ_definition,
+	"max_health_organ_definition"
+	)
+	_validate_organ_definition(
+		move_speed_organ_definition,
+		"move_speed_organ_definition"
+	)
+	_validate_organ_definition(
+		jump_height_organ_definition,
+		"jump_height_organ_definition"
 	)
 	
 	if not RunSession.is_run_active():
@@ -140,7 +157,12 @@ func _register_debug_commands() -> void:
 		"Usage: drop_weapon.",
 		_drop_weapon_from_console
 	)
-	
+	DeveloperConsole.register_command(
+		&"give_organ",
+		"Usage: give_organ <organ_id>. Available: heart, leg_lump, spring_bladder.",
+		_give_organ_from_console
+	)
+
 
 func _unregister_debug_commands() -> void:
 	DeveloperConsole.unregister_command(
@@ -187,7 +209,11 @@ func _unregister_debug_commands() -> void:
 		&"drop_weapon",
 		_drop_weapon_from_console
 	)
-	
+	DeveloperConsole.unregister_command(
+		&"give_organ",
+		_give_organ_from_console
+	)
+
 
 func _spawn_player() -> CharacterBody3D:
 	var player: CharacterBody3D = PLAYER_SCENE.instantiate() as CharacterBody3D
@@ -610,6 +636,113 @@ func _spawn_pickup(
 	)
 	
 
+func _give_organ_from_console(
+	arguments: PackedStringArray
+) -> void:
+	if arguments.size() != 1:
+		DeveloperConsole.log_error(
+			"Usage: give_organ health|speed|jump."
+		)
+		return
+
+	var player: CharacterBody3D = _get_valid_player()
+
+	if player == null:
+		return
+
+	var organ_inventory: OrganInventoryComponent = (
+		player.get_node_or_null("OrganInventoryComponent")
+		as OrganInventoryComponent
+	)
+
+	if organ_inventory == null:
+		DeveloperConsole.log_error(
+			"Player OrganInventoryComponent is unavailable."
+		)
+		return
+
+	var organ_definition: OrganDefinition = (
+		_get_organ_definition_from_argument(arguments[0])
+	)
+
+	if organ_definition == null:
+		return
+
+	var grid_position: Vector2i = (
+		_get_debug_organ_grid_position(
+			organ_definition.organ_id
+		)
+	)
+
+	var organ: OrganInstance = OrganInstance.new(
+		organ_definition,
+		ItemRarity.Type.COMMON
+	)
+
+	if not organ_inventory.try_install_organ(
+		organ,
+		grid_position
+	):
+		DeveloperConsole.log_warning(
+			"Cannot install %s at %d, %d."
+			% [
+				organ_definition.display_name,
+				grid_position.x,
+				grid_position.y,
+			]
+		)
+		return
+
+	DeveloperConsole.log_info(
+		"Installed debug organ: %s."
+		% organ_definition.display_name
+	)
+
+
+func _get_organ_definition_from_argument(
+	argument: String
+) -> OrganDefinition:
+	var organ_id: StringName = StringName(
+		argument.to_lower()
+	)
+
+	var available_definitions: Array[OrganDefinition] = [
+		max_health_organ_definition,
+		move_speed_organ_definition,
+		jump_height_organ_definition,
+	]
+
+	for organ_definition: OrganDefinition in available_definitions:
+		if organ_definition == null:
+			continue
+
+		if organ_definition.organ_id == organ_id:
+			return organ_definition
+
+	DeveloperConsole.log_error(
+		"Unknown organ ID '%s'. Available: heart, leg_lump, spring_bladder."
+		% argument
+	)
+	return null
+
+
+func _get_debug_organ_grid_position(
+	organ_id: StringName
+) -> Vector2i:
+	match organ_id:
+		&"heart":
+			return Vector2i(0, 0)
+
+		&"leg_lump":
+			return Vector2i(1, 0)
+
+		&"spring_bladder":
+			return Vector2i(0, 2)
+
+		_:
+			return Vector2i(0, 0)
+
+
 func _on_weapon_dropped(weapon: WeaponInstance) -> void:
 	var pickup: WorldPickup = (
 		_world_pickup_spawner.spawn_dropped_weapon(weapon)
@@ -713,3 +846,21 @@ func get_player() -> CharacterBody3D:
 
 func get_world_pickup_spawner() -> WorldPickupSpawner:
 	return _world_pickup_spawner
+
+
+func _validate_organ_definition(
+	organ_definition: OrganDefinition,
+	export_name: String
+) -> void:
+	assert(
+		organ_definition != null,
+		"GameRoot requires %s." % export_name
+	)
+	assert(
+		organ_definition.is_valid(),
+		"Invalid OrganDefinition '%s': %s"
+		% [
+			organ_definition.resource_path,
+			organ_definition.get_validation_error(),
+		]
+	)

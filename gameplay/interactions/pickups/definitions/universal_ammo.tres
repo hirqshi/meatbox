@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("1_lnxrk")
-pickup_id = &"universal_ammo"
+pickup_id = &"ammo"
 display_name = "Ammo"
 pickup_presentation = ExtResource("1_7unu0")
 metadata/_custom_type_script = "uid://coaabke0huqbm"

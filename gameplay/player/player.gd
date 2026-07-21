@@ -13,6 +13,12 @@ signal player_died(damage_info: DamageInfo)
 	$CameraPivot/CameraJuiceOffset/Camera3D/WeaponView
 )
 @onready var _health_component: HealthComponent = $HealthComponent
+@onready var _player_stat_modifiers: PlayerStatModifiers = (
+	$PlayerStatModifiers
+)
+@onready var _organ_inventory: OrganInventoryComponent = (
+	$OrganInventoryComponent
+)
 @onready var _camera_juice: CameraJuiceComponent = (
 	$CameraPivot/CameraJuiceOffset
 )
@@ -38,6 +44,20 @@ func _ready() -> void:
 
 	_motor.setup(self)
 	_look_controller.setup(self)
+
+	_motor.set_stat_modifiers(
+		_player_stat_modifiers
+	)
+
+	_organ_inventory.setup(
+		_player_stat_modifiers
+	)
+
+	_player_stat_modifiers.modifiers_changed.connect(
+		_on_player_modifiers_changed
+	)
+
+	_on_player_modifiers_changed()
 
 	_camera_juice.setup(self, definition)
 	_camera_juice.set_is_enabled(true)
@@ -147,6 +167,12 @@ func kill_for_debug() -> void:
 
 	apply_debug_damage(_health_component.get_current_health())
 
+
+func _on_player_modifiers_changed() -> void:
+	_health_component.set_max_health_bonus(
+		_player_stat_modifiers.get_max_health_bonus()
+	)
+	
 
 func _on_weapon_fired(weapon: WeaponInstance) -> void:
 	_camera_juice.play_weapon_fire_feedback(weapon)

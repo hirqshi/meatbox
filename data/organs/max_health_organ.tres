@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="OrganDefinition" format=3 uid="uid://cetrox6iwhk4g"]
+
+[ext_resource type="Texture2D" uid="uid://bi68lwbll8lhi" path="res://assets/placeholder/sprites/goo.png" id="1_6lphv"]
+[ext_resource type="Script" uid="uid://t76ufc4erdmf" path="res://gameplay/organs/organ_definition.gd" id="1_v0fbs"]
+
+[resource]
+script = ExtResource("1_v0fbs")
+organ_id = &"heart"
+display_name = "Heart"
+description = "More HP"
+icon = ExtResource("1_6lphv")
+max_health_bonus = 25.0
+metadata/_custom_type_script = "uid://t76ufc4erdmf"

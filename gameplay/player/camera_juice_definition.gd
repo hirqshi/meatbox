@@ -16,6 +16,8 @@ extends Resource
 @export_range(0.0, 1.0, 0.001, "suffix:m") var move_bob_vertical_m: float = 0.045
 @export_range(0.0, 20.0, 0.01, "suffix:hz") var move_bob_base_frequency_hz: float = 1.5
 @export_range(0.0, 20.0, 0.01, "suffix:hz") var move_bob_speed_frequency_hz: float = 7.0
+@export_range(1.0, 4.0, 0.05)
+var max_bob_speed_ratio: float = 2.0
 @export_range(0.0, 1.0, 0.01) var minimum_bob_speed_ratio: float = 0.08
 
 @export_category("Strafe Lean")
@@ -92,7 +94,10 @@ func get_validation_error() -> String:
 
 	if move_bob_speed_frequency_hz < 0.0:
 		return "move_bob_speed_frequency_hz must not be negative."
-
+		
+	if max_bob_speed_ratio < 1.0:
+		return "max_bob_speed_ratio must be at least one."
+		
 	if strafe_lean_response_speed <= 0.0:
 		return "strafe_lean_response_speed must be greater than zero."
 
