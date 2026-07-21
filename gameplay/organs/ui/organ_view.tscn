@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dldxsjd7ccqbs"]
+
+[ext_resource type="Script" uid="uid://dpdmwr8jtmnyy" path="res://gameplay/organs/ui/organ_view.gd" id="1_etxr4"]
+
+[node name="OrganView" type="Control" unique_id=1624124035]
+z_index = 21
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_etxr4")

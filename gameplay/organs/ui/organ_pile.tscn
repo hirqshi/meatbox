@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://swlpj2lh7ppb"]
+
+[ext_resource type="Script" uid="uid://bscxso5hh8p25" path="res://gameplay/organs/ui/organ_pile.gd" id="1_egr7o"]
+
+[node name="OrganPile" type="Control" unique_id=920227281]
+custom_minimum_size = Vector2(640, 870)
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_egr7o")
+
+[node name="Bounds" type="StaticBody2D" parent="." unique_id=186307090]
+
+[node name="Items" type="Node2D" parent="." unique_id=138928911]
+z_index = 20

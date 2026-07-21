@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://cerjpwq2mcsda"]
+
+[ext_resource type="Script" uid="uid://cybymqe46mxuh" path="res://gameplay/organs/ui/organ_pile_body.gd" id="1_bb4vv"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_6m30h"]
+friction = 0.7
+rough = true
+bounce = 0.1
+
+[node name="OrganPileBody" type="RigidBody2D" unique_id=1413753682]
+physics_material_override = SubResource("PhysicsMaterial_6m30h")
+script = ExtResource("1_bb4vv")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1428193791]

@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_ogyo4")
 organ_id = &"speed"
+display_name = "speed organ"
 description = "gotta go fast"
 icon = ExtResource("1_ap8ru")
 grid_width_cells = 2

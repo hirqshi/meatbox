@@ -12,7 +12,6 @@ signal loose_organ_removed(organ: OrganInstance)
 signal organ_grid_changed
 
 @export_category("Grid")
-
 @export_range(1, 20, 1)
 var columns: int = 4
 
@@ -49,6 +48,20 @@ func get_loose_organs() -> Array[OrganInstance]:
 	return _loose_organs.duplicate()
 
 
+func is_organ_installed(organ: OrganInstance) -> bool:
+	if organ == null:
+		return false
+
+	return _grid.get_position(organ) != Vector2i(-1, -1)
+
+
+func has_loose_organ(organ: OrganInstance) -> bool:
+	if organ == null:
+		return false
+
+	return _loose_organs.has(organ)
+
+
 func try_move_organ_to_loose(
 	organ: OrganInstance
 ) -> bool:
@@ -56,21 +69,11 @@ func try_move_organ_to_loose(
 		return false
 
 	if not _grid.remove(organ):
-		print(
-			"Cannot move '%s' to loose: not found in grid."
-			% organ.definition.display_name
-		)
 		return false
 
-	_loose_organs.append(organ)
-	print(
-		"Moved '%s' to loose. Loose count: %d"
-		% [
-			organ.definition.display_name,
-			_loose_organs.size()
-		]
-	)
-	
+	if not _loose_organs.has(organ):
+		_loose_organs.append(organ)
+
 	organ_removed.emit(organ)
 	loose_organ_added.emit(organ)
 	return true
@@ -90,7 +93,6 @@ func try_install_loose_organ(
 		return false
 
 	_loose_organs.erase(organ)
-
 	loose_organ_removed.emit(organ)
 	organ_installed.emit(organ, grid_position)
 	return true

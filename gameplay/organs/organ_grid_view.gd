@@ -1,13 +1,9 @@
 class_name OrganGridView
 extends Control
 
-signal organ_world_drop_requested(
-	organ: OrganInstance,
-	screen_position: Vector2
-)
+signal organ_drag_requested(organ: OrganInstance)
 
 @export_category("Grid")
-
 @export_range(1, 20, 1)
 var columns: int = 4:
 	set(value):
@@ -33,9 +29,9 @@ var cell_gap_px: float = 4.0:
 
 var _model: OrganGridModel
 var _views_by_organ: Dictionary[OrganInstance, OrganView] = {}
+
 var _drop_preview_cells: Array[Vector2i] = []
 var _is_drop_preview_valid: bool = false
-var _inventory: OrganInventoryComponent
 
 
 func _ready() -> void:
@@ -43,35 +39,22 @@ func _ready() -> void:
 		organ_view_scene != null,
 		"OrganGridView requires organ_view_scene."
 	)
+	assert(_organ_views != null, "OrganGridView requires OrganViews.")
 
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	z_index = 10
-
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_organ_views.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_organ_views.z_index = 10
-	_organ_views.show_behind_parent = false
 
 	resized.connect(_queue_layout)
-
 	_rebuild_grid()
 
 
-func setup(
-	model: OrganGridModel,
-	inventory: OrganInventoryComponent
-) -> void:
+func setup(model: OrganGridModel) -> void:
 	assert(model != null, "OrganGridView requires OrganGridModel.")
-	assert(
-		inventory != null,
-		"OrganGridView requires OrganInventoryComponent."
-	)
 
 	_disconnect_model()
-
 	_model = model
-	_inventory = inventory
-
 	_connect_model()
+
 	_sync_views()
 	_queue_layout()
 	queue_redraw()
@@ -81,22 +64,26 @@ func get_model() -> OrganGridModel:
 	return _model
 
 
-func get_cell_size() -> Vector2:
-	var total_gap_x: float = (
-		cell_gap_px * float(columns - 1)
-	)
-	var total_gap_y: float = (
-		cell_gap_px * float(rows - 1)
-	)
+func has_organ(organ: OrganInstance) -> bool:
+	return _views_by_organ.has(organ)
 
-	var available_width: float = maxf(
-		size.x - total_gap_x,
-		0.0
-	)
-	var available_height: float = maxf(
-		size.y - total_gap_y,
-		0.0
-	)
+
+func set_organ_visible(
+	organ: OrganInstance,
+	is_visible: bool
+) -> void:
+	var organ_view: OrganView = _views_by_organ.get(organ)
+
+	if is_instance_valid(organ_view):
+		organ_view.visible = is_visible
+
+
+func get_cell_size() -> Vector2:
+	var total_gap_x: float = cell_gap_px * float(columns - 1)
+	var total_gap_y: float = cell_gap_px * float(rows - 1)
+
+	var available_width: float = maxf(size.x - total_gap_x, 0.0)
+	var available_height: float = maxf(size.y - total_gap_y, 0.0)
 
 	return Vector2(
 		available_width / float(columns),
@@ -109,123 +96,161 @@ func get_cell_rect(cell: Vector2i) -> Rect2:
 
 	return Rect2(
 		Vector2(
-			float(cell.x) * (
-				cell_size.x + cell_gap_px
-			),
-			float(cell.y) * (
-				cell_size.y + cell_gap_px
-			)
+			float(cell.x) * (cell_size.x + cell_gap_px),
+			float(cell.y) * (cell_size.y + cell_gap_px)
 		),
 		cell_size
 	)
 
 
-func get_organ_rect(
-	organ: OrganInstance
-) -> Rect2:
-	if _model == null or organ == null:
+func get_organ_rect(organ: OrganInstance) -> Rect2:
+	if _model == null or organ == null or organ.definition == null:
 		return Rect2()
 
-	var grid_position: Vector2i = (
-		_model.get_position(organ)
-	)
+	var grid_position: Vector2i = _model.get_position(organ)
 
 	if grid_position == Vector2i(-1, -1):
 		return Rect2()
 
-	var cell_rect: Rect2 = get_cell_rect(grid_position)
+	var first_cell_rect: Rect2 = get_cell_rect(grid_position)
 
 	var organ_width: float = (
-		cell_rect.size.x
-		* float(organ.definition.grid_width_cells)
-		+ cell_gap_px
-		* float(
-			organ.definition.grid_width_cells - 1
-		)
+		first_cell_rect.size.x * float(organ.definition.grid_width_cells)
+		+ cell_gap_px * float(organ.definition.grid_width_cells - 1)
 	)
 
 	var organ_height: float = (
-		cell_rect.size.y
-		* float(organ.definition.grid_height_cells)
-		+ cell_gap_px
-		* float(
-			organ.definition.grid_height_cells - 1
-		)
+		first_cell_rect.size.y * float(organ.definition.grid_height_cells)
+		+ cell_gap_px * float(organ.definition.grid_height_cells - 1)
 	)
 
 	return Rect2(
-		cell_rect.position,
+		first_cell_rect.position,
 		Vector2(organ_width, organ_height)
 	)
 
 
-func _can_drop_data(
-	at_position: Vector2,
-	data: Variant
+func get_organ_viewport_center(organ: OrganInstance) -> Vector2:
+	var organ_rect: Rect2 = get_organ_rect(organ)
+	var local_center: Vector2 = organ_rect.position + organ_rect.size * 0.5
+
+	return get_global_transform_with_canvas() * local_center
+
+
+func get_organ_canvas_center(organ: OrganInstance) -> Vector2:
+	var organ_rect: Rect2 = get_organ_rect(organ)
+	var local_center: Vector2 = organ_rect.position + organ_rect.size * 0.5
+
+	return get_global_transform_with_canvas() * local_center
+
+
+func get_drop_grid_position_from_viewport_point(
+	viewport_position: Vector2,
+	organ: OrganInstance
+) -> Vector2i:
+	var local_point: Vector2 = viewport_to_local_position(viewport_position)
+	return get_drop_grid_position_from_local_point(local_point, organ)
+
+
+func get_drop_grid_position_from_local_point(
+	local_point: Vector2,
+	organ: OrganInstance
+) -> Vector2i:
+	if organ == null or organ.definition == null:
+		return Vector2i(-1, -1)
+
+	var cell_size: Vector2 = get_cell_size()
+	var cell_stride: Vector2 = cell_size + Vector2(
+		cell_gap_px,
+		cell_gap_px
+	)
+
+	if cell_stride.x <= 0.0 or cell_stride.y <= 0.0:
+		return Vector2i(-1, -1)
+
+	var hovered_cell: Vector2i = Vector2i(
+		floori(local_point.x / cell_stride.x),
+		floori(local_point.y / cell_stride.y)
+	)
+
+	var offset_cells: Vector2i = Vector2i(
+		organ.definition.grid_width_cells / 2,
+		organ.definition.grid_height_cells / 2
+	)
+
+	return hovered_cell - offset_cells
+
+
+func is_viewport_point_over_grid(
+	viewport_position: Vector2
 ) -> bool:
-	var drag_data: OrganDragData = data as OrganDragData
-
-	if drag_data == null or drag_data.organ == null:
-		return false
-
-	var target_position: Vector2i = (
-		_get_drop_grid_position(
-			at_position,
-			drag_data.grab_offset_cells
-		)
-	)
-
-	return _model.can_place(
-		drag_data.organ,
-		target_position
-	)
+	var local_point: Vector2 = viewport_to_local_position(viewport_position)
+	return Rect2(Vector2.ZERO, size).has_point(local_point)
 
 
-func _drop_data(
-	at_position: Vector2,
-	data: Variant
+func update_drop_preview_for_viewport_position(
+	organ: OrganInstance,
+	viewport_position: Vector2
 ) -> void:
-	var drag_data: OrganDragData = data as OrganDragData
-
-	if drag_data == null or drag_data.organ == null:
+	if _model == null or organ == null:
 		clear_drop_preview()
 		return
 
 	var target_position: Vector2i = (
-		_get_drop_grid_position(
-			at_position,
-			drag_data.grab_offset_cells
+		get_drop_grid_position_from_viewport_point(
+			viewport_position,
+			organ
 		)
 	)
 
-	var was_placed: bool = false
+	_drop_preview_cells = _model.get_occupied_cells(
+		organ,
+		target_position
+	)
+	_is_drop_preview_valid = _model.can_place(
+		organ,
+		target_position
+	)
 
-	if drag_data.source_type == OrganDragData.SourceType.PILE:
-		if _inventory != null:
-			was_placed = _inventory.try_install_loose_organ(
-				drag_data.organ,
-				target_position
-			)
-	else:
-		was_placed = _model.try_place(
-			drag_data.organ,
-			target_position
+	queue_redraw()
+
+
+func clear_drop_preview() -> void:
+	if _drop_preview_cells.is_empty() and not _is_drop_preview_valid:
+		return
+
+	_drop_preview_cells.clear()
+	_is_drop_preview_valid = false
+	queue_redraw()
+
+
+func can_place_organ_at_viewport_position(
+	organ: OrganInstance,
+	viewport_position: Vector2
+) -> bool:
+	if _model == null or organ == null:
+		return false
+
+	var target_position: Vector2i = (
+		get_drop_grid_position_from_viewport_point(
+			viewport_position,
+			organ
 		)
+	)
 
-	if was_placed and is_instance_valid(
-		drag_data.source_view
-	):
-		drag_data.source_view.show()
+	return _model.can_place(organ, target_position)
 
-	clear_drop_preview()
+
+func viewport_to_local_position(
+	viewport_position: Vector2
+) -> Vector2:
+	return get_global_transform_with_canvas().affine_inverse() * viewport_position
 
 
 func _draw() -> void:
 	for y: int in rows:
 		for x: int in columns:
-			var cell_rect: Rect2 = get_cell_rect(
-				Vector2i(x, y)
-			)
+			var cell_rect: Rect2 = get_cell_rect(Vector2i(x, y))
 
 			draw_rect(
 				cell_rect,
@@ -238,62 +263,24 @@ func _draw() -> void:
 				false,
 				1.0
 			)
+
+	if _model == null:
+		return
+
 	for cell: Vector2i in _drop_preview_cells:
 		if not _model.is_cell_inside(cell):
 			continue
 
-		var preview_color: Color = Color(
-			0.15,
-			0.9,
-			0.25,
-			0.42
-		)
+		var preview_color: Color = Color(0.15, 0.9, 0.25, 0.42)
 
 		if not _is_drop_preview_valid:
-			preview_color = Color(
-				0.95,
-				0.15,
-				0.15,
-				0.48
-			)
+			preview_color = Color(0.95, 0.15, 0.15, 0.48)
 
 		draw_rect(
 			get_cell_rect(cell),
 			preview_color,
 			true
 		)
-
-
-func _gui_input(event: InputEvent) -> void:
-	if event is not InputEventMouseMotion:
-		return
-
-	var drag_data: OrganDragData = (
-		get_viewport().gui_get_drag_data()
-		as OrganDragData
-	)
-
-	if drag_data == null or drag_data.organ == null:
-		clear_drop_preview()
-		return
-
-	var target_position: Vector2i = (
-		_get_drop_grid_position(
-			event.position,
-			drag_data.grab_offset_cells
-		)
-	)
-
-	_drop_preview_cells = _model.get_occupied_cells(
-		drag_data.organ,
-		target_position
-	)
-	_is_drop_preview_valid = _model.can_place(
-		drag_data.organ,
-		target_position
-	)
-
-	queue_redraw()
 
 
 func _rebuild_grid() -> void:
@@ -330,10 +317,7 @@ func _sync_views() -> void:
 		if installed_organs.has(organ):
 			continue
 
-		var organ_view: OrganView = (
-			_views_by_organ.get(organ)
-		)
-
+		var organ_view: OrganView = _views_by_organ.get(organ)
 		if is_instance_valid(organ_view):
 			organ_view.queue_free()
 
@@ -344,8 +328,7 @@ func _sync_views() -> void:
 			continue
 
 		var organ_view: OrganView = (
-			organ_view_scene.instantiate()
-			as OrganView
+			organ_view_scene.instantiate() as OrganView
 		)
 
 		if organ_view == null:
@@ -356,30 +339,20 @@ func _sync_views() -> void:
 
 		_organ_views.add_child(organ_view)
 		organ_view.setup(organ, self)
-		organ_view.world_drop_requested.connect(
-			_on_organ_view_world_drop_requested
+		organ_view.organ_drag_requested.connect(
+			_on_organ_view_drag_requested
 		)
 		_views_by_organ[organ] = organ_view
 
 	_layout_organ_views()
-	
-	print(
-		"Grid sync: model=%d, views=%d"
-		% [
-			installed_organs.size(),
-			_views_by_organ.size()
-		]
-	)
-	
+
 
 func _layout_organ_views() -> void:
 	if _model == null:
 		return
 
 	for organ: OrganInstance in _views_by_organ:
-		var organ_view: OrganView = (
-			_views_by_organ.get(organ)
-		)
+		var organ_view: OrganView = _views_by_organ.get(organ)
 
 		if not is_instance_valid(organ_view):
 			continue
@@ -388,58 +361,14 @@ func _layout_organ_views() -> void:
 
 		organ_view.position = organ_rect.position
 		organ_view.size = organ_rect.size
-		organ_view.pivot_offset = (
-			organ_rect.size * 0.5
-		)
-		print(
-			"OrganView '%s': position=%s size=%s texture=%s visible=%s"
-			% [
-				organ.definition.display_name,
-				organ_view.position,
-				organ_view.size,
-				organ_view.texture,
-				organ_view.is_visible_in_tree()
-			]
-		)
-
-
-func clear_drop_preview() -> void:
-	if _drop_preview_cells.is_empty():
-		return
-
-	_drop_preview_cells.clear()
-	_is_drop_preview_valid = false
-	queue_redraw()
-
-
-func _get_drop_grid_position(
-	at_position: Vector2,
-	grab_offset_cells: Vector2i
-) -> Vector2i:
-	var cell_size: Vector2 = get_cell_size()
-	var cell_stride: Vector2 = cell_size + Vector2(
-		cell_gap_px,
-		cell_gap_px
-	)
-
-	if cell_stride.x <= 0.0 or cell_stride.y <= 0.0:
-		return Vector2i(-1, -1)
-
-	var hovered_cell: Vector2i = Vector2i(
-		floori(at_position.x / cell_stride.x),
-		floori(at_position.y / cell_stride.y)
-	)
-
-	return hovered_cell - grab_offset_cells
+		organ_view.pivot_offset = organ_rect.size * 0.5
 
 
 func _connect_model() -> void:
 	if _model == null:
 		return
 
-	if not _model.changed.is_connected(
-		_on_model_changed
-	):
+	if not _model.changed.is_connected(_on_model_changed):
 		_model.changed.connect(_on_model_changed)
 
 
@@ -447,11 +376,9 @@ func _disconnect_model() -> void:
 	if _model == null:
 		return
 
-	if _model.changed.is_connected(
-		_on_model_changed
-	):
+	if _model.changed.is_connected(_on_model_changed):
 		_model.changed.disconnect(_on_model_changed)
-	
+
 
 func _on_model_changed() -> void:
 	_sync_views()
@@ -459,11 +386,5 @@ func _on_model_changed() -> void:
 	queue_redraw()
 
 
-func _on_organ_view_world_drop_requested(
-	organ: OrganInstance,
-	screen_position: Vector2
-) -> void:
-	organ_world_drop_requested.emit(
-		organ,
-		screen_position
-	)
+func _on_organ_view_drag_requested(organ: OrganInstance) -> void:
+	organ_drag_requested.emit(organ)

@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dnn5ny4odo1nw"]
+
+[ext_resource type="Script" uid="uid://b355ixf8sg5xk" path="res://gameplay/organs/organ_grid_view.gd" id="1_pflli"]
+[ext_resource type="PackedScene" uid="uid://dldxsjd7ccqbs" path="res://gameplay/organs/ui/organ_view.tscn" id="2_7yoau"]
+
+[node name="OrganGridView" type="Control" unique_id=2095548144]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -1600.0
+offset_bottom = -680.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_pflli")
+organ_view_scene = ExtResource("2_7yoau")
+
+[node name="OrganViews" type="Control" parent="." unique_id=711991199]
+z_index = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
