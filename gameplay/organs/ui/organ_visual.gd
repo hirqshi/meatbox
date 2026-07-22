@@ -15,6 +15,17 @@ var _move_tween: Tween
 var _scale_tween: Tween
 var _shake_tween: Tween
 
+var _icon_rest_position: Vector2 = Vector2.ZERO
+var _icon_rest_rotation: float = 0.0
+
+var _shake_primary_offset_px: float = 0.0
+var _shake_secondary_offset_px: float = 0.0
+var _shake_primary_axis: Vector2 = Vector2.RIGHT
+var _shake_secondary_axis: Vector2 = Vector2.DOWN
+var _shake_frequency_hz: float = 0.0
+var _shake_secondary_frequency_hz: float = 0.0
+var _shake_rotation_radians: float = 0.0
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -132,32 +143,38 @@ func play_click_shake() -> void:
 	if visual_definition == null:
 		return
 
-	_kill_tween(_shake_tween)
-
-	var origin: Vector2 = position
-	var duration_sec: float = visual_definition.click_shake_duration_sec
-	var offset_px: float = visual_definition.click_shake_offset_px
-
-	_shake_tween = create_tween()
-	_shake_tween.set_trans(Tween.TRANS_SINE)
-	_shake_tween.set_ease(Tween.EASE_OUT)
-	_shake_tween.tween_property(
-		self,
-		"position",
-		origin + Vector2(offset_px, 0.0),
-		duration_sec * 0.33
+	_play_icon_shake(
+		visual_definition.click_shake_offset_px,
+		visual_definition.click_shake_secondary_offset_px,
+		deg_to_rad(visual_definition.click_shake_axis_deg),
+		deg_to_rad(visual_definition.click_shake_secondary_axis_deg),
+		visual_definition.click_shake_frequency_hz,
+		visual_definition.click_shake_secondary_frequency_hz,
+		deg_to_rad(visual_definition.click_shake_rotation_deg),
+		visual_definition.click_shake_duration_sec
 	)
-	_shake_tween.tween_property(
-		self,
-		"position",
-		origin + Vector2(-offset_px * 0.7, 0.0),
-		duration_sec * 0.33
+
+
+func play_insert_shake() -> void:
+	if _organ == null or _organ.definition == null:
+		return
+
+	var visual_definition: OrganVisualDefinition = (
+		_organ.definition.visual_definition
 	)
-	_shake_tween.tween_property(
-		self,
-		"position",
-		origin,
-		duration_sec * 0.34
+
+	if visual_definition == null:
+		return
+
+	_play_icon_shake(
+		visual_definition.insert_shake_offset_px,
+		visual_definition.insert_shake_secondary_offset_px,
+		deg_to_rad(visual_definition.insert_shake_axis_deg),
+		deg_to_rad(visual_definition.insert_shake_secondary_axis_deg),
+		visual_definition.insert_shake_frequency_hz,
+		visual_definition.insert_shake_secondary_frequency_hz,
+		deg_to_rad(visual_definition.insert_shake_rotation_deg),
+		visual_definition.insert_shake_duration_sec
 	)
 
 
@@ -205,6 +222,11 @@ func _apply_layout() -> void:
 
 	_icon.size = _visual_size_px
 	_icon.position = (size - _visual_size_px) * 0.5
+	_icon.pivot_offset = _icon.size * 0.5
+	_icon.rotation = 0.0
+
+	_icon_rest_position = _icon.position
+	_icon_rest_rotation = _icon.rotation
 
 	_icon.offset_left = _icon.position.x
 	_icon.offset_top = _icon.position.y
@@ -235,6 +257,80 @@ func _play_hover_scale() -> void:
 	_scale_tween.set_trans(Tween.TRANS_QUAD)
 	_scale_tween.set_ease(Tween.EASE_OUT)
 	_scale_tween.tween_property(self, "scale", target_scale, duration_sec)
+
+
+func _play_icon_shake(
+	primary_offset_px: float,
+	secondary_offset_px: float,
+	primary_axis_radians: float,
+	secondary_axis_radians: float,
+	frequency_hz: float,
+	secondary_frequency_hz: float,
+	rotation_radians: float,
+	duration_sec: float
+) -> void:
+	if not is_instance_valid(_icon):
+		return
+
+	_kill_tween(_shake_tween)
+	_reset_icon_shake_state()
+
+	_shake_primary_offset_px = primary_offset_px
+	_shake_secondary_offset_px = secondary_offset_px
+	_shake_primary_axis = Vector2.RIGHT.rotated(primary_axis_radians)
+	_shake_secondary_axis = Vector2.RIGHT.rotated(secondary_axis_radians)
+	_shake_frequency_hz = frequency_hz
+	_shake_secondary_frequency_hz = secondary_frequency_hz
+	_shake_rotation_radians = rotation_radians
+
+	if duration_sec <= 0.0:
+		return
+
+	if (
+		is_zero_approx(primary_offset_px)
+		and is_zero_approx(secondary_offset_px)
+		and is_zero_approx(rotation_radians)
+	):
+		return
+
+	_shake_tween = create_tween()
+	_shake_tween.tween_method(
+		_apply_shake_sample,
+		0.0,
+		1.0,
+		duration_sec
+	)
+	_shake_tween.finished.connect(_reset_icon_shake_state)
+
+
+func _apply_shake_sample(progress: float) -> void:
+	if not is_instance_valid(_icon):
+		return
+
+	var envelope: float = 1.0 - progress
+
+	var primary_wave: float = sin(TAU * _shake_frequency_hz * progress)
+	var secondary_wave: float = sin(
+		TAU * _shake_secondary_frequency_hz * progress + PI * 0.5
+	)
+
+	var offset: Vector2 = (
+		_shake_primary_axis * _shake_primary_offset_px * primary_wave
+		+ _shake_secondary_axis * _shake_secondary_offset_px * secondary_wave
+	) * envelope
+
+	_icon.position = _icon_rest_position + offset
+	_icon.rotation = _icon_rest_rotation + (
+		_shake_rotation_radians * primary_wave * envelope
+	)
+
+
+func _reset_icon_shake_state() -> void:
+	if not is_instance_valid(_icon):
+		return
+
+	_icon.position = _icon_rest_position
+	_icon.rotation = _icon_rest_rotation
 
 
 func _get_move_duration_sec() -> float:

@@ -16,6 +16,8 @@ var _visuals_by_organ: Dictionary = {}
 var _dragged_organ: OrganInstance
 var _drag_proxy_visual: OrganVisual
 
+var _is_grid_insert_animating: bool = false
+
 
 func _ready() -> void:
 	if presentation_settings != null:
@@ -365,6 +367,10 @@ func _on_presentation_settings_changed() -> void:
 
 func _on_state_changed(_organ: OrganInstance = null) -> void:
 	_refresh_visuals()
+
+	if _is_grid_insert_animating:
+		return
+
 	_sync_visual_targets(true)
 
 
@@ -384,3 +390,64 @@ func play_click_feedback_for(organ: OrganInstance) -> void:
 	var visual: OrganVisual = _visuals_by_organ.get(organ)
 	if is_instance_valid(visual):
 		visual.play_click_shake()
+
+
+func play_drag_pickup_feedback() -> void:
+	if not is_instance_valid(_drag_proxy_visual):
+		return
+
+	_drag_proxy_visual.play_click_shake()
+
+
+func play_grid_insert_animation() -> void:
+	if _dragged_organ == null:
+		return
+
+	if not is_instance_valid(_drag_proxy_visual):
+		return
+
+	if _inventory == null or _grid_view == null:
+		return
+
+	if not _inventory.is_organ_installed(_dragged_organ):
+		return
+
+	_is_grid_insert_animating = true
+
+	var target_overlay_position: Vector2 = (
+		canvas_to_overlay_local(
+			_grid_view.get_organ_canvas_center(_dragged_organ)
+		)
+	)
+
+	_drag_proxy_visual.tween_to_overlay_position(
+		target_overlay_position,
+		0.0
+	)
+
+	var move_duration_sec: float = 0.12
+	if (
+		_dragged_organ.definition != null
+		and _dragged_organ.definition.visual_definition != null
+	):
+		move_duration_sec = (
+			_dragged_organ.definition.visual_definition.move_duration_sec
+		)
+
+	await get_tree().create_timer(move_duration_sec).timeout
+
+	if is_instance_valid(_drag_proxy_visual):
+		_drag_proxy_visual.play_insert_shake()
+
+	var shake_duration_sec: float = 0.14
+	if (
+		_dragged_organ.definition != null
+		and _dragged_organ.definition.visual_definition != null
+	):
+		shake_duration_sec = (
+			_dragged_organ.definition.visual_definition.insert_shake_duration_sec
+		)
+
+	await get_tree().create_timer(shake_duration_sec).timeout
+
+	_is_grid_insert_animating = false

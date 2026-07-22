@@ -18,6 +18,7 @@ var _pointer_viewport_position: Vector2 = Vector2.ZERO
 var _last_pointer_viewport_position: Vector2 = Vector2.ZERO
 var _last_drag_velocity: Vector2 = Vector2.ZERO
 var _drag_grab_offset_from_center: Vector2 = Vector2.ZERO
+var _is_finishing_drag: bool = false
 
 
 func setup(
@@ -54,6 +55,9 @@ func _process(delta: float) -> void:
 	if not _is_dragging:
 		return
 
+	if _is_finishing_drag:
+		return
+		
 	var pointer_viewport_position: Vector2 = (
 		get_viewport().get_mouse_position()
 	)
@@ -125,7 +129,8 @@ func _begin_drag(
 		pointer_viewport_position - _drag_grab_offset_from_center,
 		0.0
 	)
-
+	_visual_manager.play_drag_pickup_feedback()
+	
 	match source_type:
 		DragSourceType.GRID:
 			_grid_view.set_organ_visible(organ, false)
@@ -143,6 +148,8 @@ func _finish_drag(viewport_position: Vector2) -> void:
 		_reset_drag()
 		return
 
+	_is_finishing_drag = true
+
 	var dropped_on_grid: bool = (
 		_grid_view.is_viewport_point_over_grid(viewport_position)
 		and _grid_view.can_place_organ_at_viewport_position(
@@ -155,21 +162,25 @@ func _finish_drag(viewport_position: Vector2) -> void:
 		viewport_position
 	)
 
+	var did_install_to_grid: bool = false
+
 	if dropped_on_grid:
-		_commit_to_grid(organ, viewport_position)
+		did_install_to_grid = _commit_to_grid(organ, viewport_position)
 	elif dropped_on_pile:
 		_commit_to_pile(organ, viewport_position)
 	else:
 		_commit_to_world(organ, viewport_position)
 
-	_visual_manager.snap_organ_to_current_target(organ)
+	if did_install_to_grid:
+		await _visual_manager.play_grid_insert_animation()
+
 	_reset_drag()
 
 
 func _commit_to_grid(
 	organ: OrganInstance,
 	viewport_position: Vector2
-) -> void:
+) -> bool:
 	var target_position: Vector2i = (
 		_grid_view.get_drop_grid_position_from_viewport_point(
 			viewport_position,
@@ -189,6 +200,8 @@ func _commit_to_grid(
 			if not moved_inside_grid:
 				_grid_view.set_organ_visible(organ, true)
 
+			return moved_inside_grid
+
 		DragSourceType.PILE:
 			var installed_from_pile: bool = (
 				_inventory.try_install_loose_organ(
@@ -203,6 +216,10 @@ func _commit_to_grid(
 					viewport_position - _drag_grab_offset_from_center,
 					Vector2.ZERO
 				)
+
+			return installed_from_pile
+
+	return false
 
 
 func _commit_to_pile(
@@ -277,6 +294,8 @@ func _reset_drag() -> void:
 	_last_pointer_viewport_position = Vector2.ZERO
 	_last_drag_velocity = Vector2.ZERO
 	_drag_grab_offset_from_center = Vector2.ZERO
+	
+	_is_finishing_drag = false
 
 
 func _on_grid_drag_requested(organ: OrganInstance) -> void:
