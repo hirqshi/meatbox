@@ -25,6 +25,9 @@ var cell_gap_px: float = 4.0:
 @export_category("Scenes")
 @export var organ_view_scene: PackedScene
 
+@export_category("Dependencies")
+@export var organ_visual_manager: OrganVisualManager
+
 @onready var _organ_views: Control = $OrganViews
 
 var _model: OrganGridModel
@@ -78,28 +81,55 @@ func set_organ_visible(
 		organ_view.visible = is_visible
 
 
-func get_cell_size() -> Vector2:
-	var total_gap_x: float = cell_gap_px * float(columns - 1)
-	var total_gap_y: float = cell_gap_px * float(rows - 1)
+func get_cell_side_px() -> float:
+	if columns <= 0 or rows <= 0:
+		return 0.0
+
+	var total_gap_x: float = cell_gap_px * float(maxi(columns - 1, 0))
+	var total_gap_y: float = cell_gap_px * float(maxi(rows - 1, 0))
 
 	var available_width: float = maxf(size.x - total_gap_x, 0.0)
 	var available_height: float = maxf(size.y - total_gap_y, 0.0)
 
+	var cell_width: float = available_width / float(columns)
+	var cell_height: float = available_height / float(rows)
+
+	return floorf(minf(cell_width, cell_height))
+
+
+func get_cell_size() -> Vector2:
+	var side: float = get_cell_side_px()
+	return Vector2(side, side)
+
+
+func get_grid_pixel_size() -> Vector2:
+	var side: float = get_cell_side_px()
+
+	if side <= 0.0:
+		return Vector2.ZERO
+
 	return Vector2(
-		available_width / float(columns),
-		available_height / float(rows)
+		float(columns) * side + float(maxi(columns - 1, 0)) * cell_gap_px,
+		float(rows) * side + float(maxi(rows - 1, 0)) * cell_gap_px
 	)
 
 
+func get_grid_origin_local() -> Vector2:
+	return (size - get_grid_pixel_size()) * 0.5
+
+
+func get_grid_rect_local() -> Rect2:
+	return Rect2(get_grid_origin_local(), get_grid_pixel_size())
+
+
 func get_cell_rect(cell: Vector2i) -> Rect2:
-	var cell_size: Vector2 = get_cell_size()
+	var side: float = get_cell_side_px()
+	var step: float = side + cell_gap_px
+	var origin: Vector2 = get_grid_origin_local()
 
 	return Rect2(
-		Vector2(
-			float(cell.x) * (cell_size.x + cell_gap_px),
-			float(cell.y) * (cell_size.y + cell_gap_px)
-		),
-		cell_size
+		origin + Vector2(float(cell.x) * step, float(cell.y) * step),
+		Vector2(side, side)
 	)
 
 
@@ -113,14 +143,15 @@ func get_organ_rect(organ: OrganInstance) -> Rect2:
 		return Rect2()
 
 	var first_cell_rect: Rect2 = get_cell_rect(grid_position)
+	var side: float = get_cell_side_px()
 
 	var organ_width: float = (
-		first_cell_rect.size.x * float(organ.definition.grid_width_cells)
+		side * float(organ.definition.grid_width_cells)
 		+ cell_gap_px * float(organ.definition.grid_width_cells - 1)
 	)
 
 	var organ_height: float = (
-		first_cell_rect.size.y * float(organ.definition.grid_height_cells)
+		side * float(organ.definition.grid_height_cells)
 		+ cell_gap_px * float(organ.definition.grid_height_cells - 1)
 	)
 
@@ -133,14 +164,12 @@ func get_organ_rect(organ: OrganInstance) -> Rect2:
 func get_organ_viewport_center(organ: OrganInstance) -> Vector2:
 	var organ_rect: Rect2 = get_organ_rect(organ)
 	var local_center: Vector2 = organ_rect.position + organ_rect.size * 0.5
-
 	return get_global_transform_with_canvas() * local_center
 
 
 func get_organ_canvas_center(organ: OrganInstance) -> Vector2:
 	var organ_rect: Rect2 = get_organ_rect(organ)
 	var local_center: Vector2 = organ_rect.position + organ_rect.size * 0.5
-
 	return get_global_transform_with_canvas() * local_center
 
 
@@ -159,19 +188,27 @@ func get_drop_grid_position_from_local_point(
 	if organ == null or organ.definition == null:
 		return Vector2i(-1, -1)
 
-	var cell_size: Vector2 = get_cell_size()
-	var cell_stride: Vector2 = cell_size + Vector2(
-		cell_gap_px,
-		cell_gap_px
-	)
-
-	if cell_stride.x <= 0.0 or cell_stride.y <= 0.0:
+	var grid_rect: Rect2 = get_grid_rect_local()
+	if not grid_rect.has_point(local_point):
 		return Vector2i(-1, -1)
 
+	var side: float = get_cell_side_px()
+	var step: float = side + cell_gap_px
+	if step <= 0.0:
+		return Vector2i(-1, -1)
+
+	var relative: Vector2 = local_point - grid_rect.position
+
 	var hovered_cell: Vector2i = Vector2i(
-		floori(local_point.x / cell_stride.x),
-		floori(local_point.y / cell_stride.y)
+		floori(relative.x / step),
+		floori(relative.y / step)
 	)
+
+	var cell_local_x: float = fposmod(relative.x, step)
+	var cell_local_y: float = fposmod(relative.y, step)
+
+	if cell_local_x > side or cell_local_y > side:
+		return Vector2i(-1, -1)
 
 	var offset_cells: Vector2i = Vector2i(
 		organ.definition.grid_width_cells / 2,
@@ -185,7 +222,7 @@ func is_viewport_point_over_grid(
 	viewport_position: Vector2
 ) -> bool:
 	var local_point: Vector2 = viewport_to_local_position(viewport_position)
-	return Rect2(Vector2.ZERO, size).has_point(local_point)
+	return get_grid_rect_local().has_point(local_point)
 
 
 func update_drop_preview_for_viewport_position(
@@ -317,9 +354,9 @@ func _sync_views() -> void:
 		if installed_organs.has(organ):
 			continue
 
-		var organ_view: OrganView = _views_by_organ.get(organ)
-		if is_instance_valid(organ_view):
-			organ_view.queue_free()
+		var removed_view: OrganView = _views_by_organ.get(organ)
+		if is_instance_valid(removed_view):
+			removed_view.queue_free()
 
 		_views_by_organ.erase(organ)
 
@@ -342,6 +379,16 @@ func _sync_views() -> void:
 		organ_view.organ_drag_requested.connect(
 			_on_organ_view_drag_requested
 		)
+		organ_view.organ_hover_started.connect(
+			_on_organ_view_hover_started
+		)
+		organ_view.organ_hover_ended.connect(
+			_on_organ_view_hover_ended
+		)
+		organ_view.organ_clicked.connect(
+			_on_organ_view_clicked
+		)
+
 		_views_by_organ[organ] = organ_view
 
 	_layout_organ_views()
@@ -388,3 +435,24 @@ func _on_model_changed() -> void:
 
 func _on_organ_view_drag_requested(organ: OrganInstance) -> void:
 	organ_drag_requested.emit(organ)
+
+
+func _on_organ_view_hover_started(organ: OrganInstance) -> void:
+	if organ_visual_manager == null:
+		return
+
+	organ_visual_manager.play_hover_enter_for(organ)
+
+
+func _on_organ_view_hover_ended(organ: OrganInstance) -> void:
+	if organ_visual_manager == null:
+		return
+
+	organ_visual_manager.play_hover_exit_for(organ)
+
+
+func _on_organ_view_clicked(organ: OrganInstance) -> void:
+	if organ_visual_manager == null:
+		return
+
+	organ_visual_manager.play_click_feedback_for(organ)

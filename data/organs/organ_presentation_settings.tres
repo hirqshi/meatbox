@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="OrganPresentationSettings" format=3 uid="uid://bnk40t22xbxgk"]
+
+[ext_resource type="Script" uid="uid://4pka7r0syhiw" path="res://gameplay/organs/organ_presentation_settings.gd" id="1_a846m"]
+
+[resource]
+script = ExtResource("1_a846m")
+global_icon_scale = 1.6
+global_collision_scale = 0.7999999999999999
+metadata/_custom_type_script = "uid://4pka7r0syhiw"

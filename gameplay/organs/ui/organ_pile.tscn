@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://swlpj2lh7ppb"]
 
 [ext_resource type="Script" uid="uid://bscxso5hh8p25" path="res://gameplay/organs/ui/organ_pile.gd" id="1_egr7o"]
+[ext_resource type="PackedScene" uid="uid://cerjpwq2mcsda" path="res://gameplay/organs/ui/organ_pile_body.tscn" id="2_lvb5u"]
 
 [node name="OrganPile" type="Control" unique_id=920227281]
 custom_minimum_size = Vector2(640, 870)
@@ -8,6 +9,8 @@ layout_mode = 3
 anchors_preset = 0
 mouse_filter = 2
 script = ExtResource("1_egr7o")
+organ_pile_body_scene = ExtResource("2_lvb5u")
+global_collision_scale = 0.6799999999999999
 
 [node name="Bounds" type="StaticBody2D" parent="." unique_id=186307090]
 

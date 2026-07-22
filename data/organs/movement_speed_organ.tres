@@ -2,13 +2,19 @@
 
 [ext_resource type="Texture2D" uid="uid://c4mt8ymqksa81" path="res://assets/placeholder/sprites/goo2.png" id="1_ap8ru"]
 [ext_resource type="Script" uid="uid://t76ufc4erdmf" path="res://gameplay/organs/organ_definition.gd" id="1_ogyo4"]
+[ext_resource type="Script" uid="uid://t4pxprkkeowf" path="res://gameplay/organs/organ_visual_definition.gd" id="3_kicy6"]
+
+[sub_resource type="Resource" id="Resource_eoirf"]
+script = ExtResource("3_kicy6")
+icon = ExtResource("1_ap8ru")
+metadata/_custom_type_script = "uid://t4pxprkkeowf"
 
 [resource]
 script = ExtResource("1_ogyo4")
 organ_id = &"speed"
 display_name = "speed organ"
 description = "gotta go fast"
-icon = ExtResource("1_ap8ru")
+visual_definition = SubResource("Resource_eoirf")
 grid_width_cells = 2
 move_speed_bonus_m_per_s = 6.0
 metadata/_custom_type_script = "uid://t76ufc4erdmf"

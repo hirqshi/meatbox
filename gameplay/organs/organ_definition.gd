@@ -7,7 +7,7 @@ extends Resource
 @export_multiline var description: String = ""
 
 @export_category("Visual")
-@export var icon: Texture2D
+@export var visual_definition: OrganVisualDefinition
 @export var grid_tint: Color = Color.WHITE
 
 @export_category("Grid Shape")
@@ -35,6 +35,9 @@ func get_validation_error() -> String:
 	if display_name.is_empty():
 		return "display_name must not be empty."
 
+	if visual_definition == null:
+		return "visual_definition must not be null."
+
 	if grid_width_cells <= 0:
 		return "grid_width_cells must be greater than zero."
 
@@ -46,3 +49,24 @@ func get_validation_error() -> String:
 
 func is_valid() -> bool:
 	return get_validation_error().is_empty()
+
+
+func get_visual_scale() -> float:
+	if visual_definition == null:
+		return 1.0
+
+	return visual_definition.visual_scale
+
+
+func get_collision_scale() -> float:
+	if visual_definition == null:
+		return 1.0
+
+	return visual_definition.collision_scale
+
+
+func get_icon() -> Texture2D:
+	if visual_definition == null:
+		return null
+
+	return visual_definition.icon

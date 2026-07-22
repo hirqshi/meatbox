@@ -12,6 +12,9 @@ signal organ_drag_requested(organ: OrganInstance)
 @export_range(0.0, 2000.0, 1.0, "suffix:px/s²")
 var gravity_px_per_s2: float = 900.0
 
+@export_range(0.1, 8.0, 0.01)
+var global_collision_scale: float = 1.0
+
 @onready var _bounds: StaticBody2D = $Bounds
 @onready var _items: Node2D = $Items
 
@@ -207,7 +210,8 @@ func _add_body(organ: OrganInstance) -> void:
 		organ,
 		_get_organ_size_px(organ),
 		gravity_px_per_s2,
-		self
+		self,
+		global_collision_scale
 	)
 
 	body.collision_layer = PILE_COLLISION_LAYER
@@ -244,11 +248,13 @@ func _get_organ_size_px(organ: OrganInstance) -> Vector2:
 	if _grid_view == null:
 		return Vector2(48.0, 48.0)
 
-	var cell_size: Vector2 = _grid_view.get_cell_size()
+	var cell_side_px: float = _grid_view.get_cell_side_px()
 
 	return Vector2(
-		cell_size.x * float(organ.definition.grid_width_cells),
-		cell_size.y * float(organ.definition.grid_height_cells)
+		cell_side_px * float(organ.definition.grid_width_cells)
+		+ _grid_view.cell_gap_px * float(organ.definition.grid_width_cells - 1),
+		cell_side_px * float(organ.definition.grid_height_cells)
+		+ _grid_view.cell_gap_px * float(organ.definition.grid_height_cells - 1)
 	)
 
 
@@ -312,6 +318,7 @@ func _refresh_body_sizes() -> void:
 		if not is_instance_valid(body):
 			continue
 
+		body.set_global_collision_scale(global_collision_scale)
 		body.set_body_size(_get_organ_size_px(organ))
 
 

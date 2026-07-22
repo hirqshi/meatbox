@@ -4,15 +4,18 @@ extends RigidBody2D
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 
 var _organ: OrganInstance
-var _organ_size_px: Vector2 = Vector2.ONE
+var _logical_size_px: Vector2 = Vector2.ONE
+var _collision_size_px: Vector2 = Vector2.ONE
+var _global_collision_scale: float = 1.0
 var _pile: OrganPile
 
 
 func setup(
 	organ: OrganInstance,
-	organ_size_px: Vector2,
+	logical_size_px: Vector2,
 	gravity_px_per_s2: float,
-	pile: OrganPile
+	pile: OrganPile,
+	global_collision_scale: float = 1.0
 ) -> void:
 	assert(organ != null, "OrganPileBody requires OrganInstance.")
 	assert(organ.definition != null, "OrganPileBody requires OrganDefinition.")
@@ -20,6 +23,7 @@ func setup(
 
 	_organ = organ
 	_pile = pile
+	_global_collision_scale = maxf(global_collision_scale, 0.1)
 
 	gravity_scale = gravity_px_per_s2 / 980.0
 	lock_rotation = false
@@ -29,17 +33,32 @@ func setup(
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
 	input_pickable = true
 
-	set_body_size(organ_size_px)
+	set_body_size(logical_size_px)
 
 
 func get_organ() -> OrganInstance:
 	return _organ
 
 
-func set_body_size(value: Vector2) -> void:
-	_organ_size_px = Vector2(
-		maxf(value.x, 8.0),
-		maxf(value.y, 8.0)
+func set_global_collision_scale(value: float) -> void:
+	_global_collision_scale = maxf(value, 0.1)
+	set_body_size(_logical_size_px)
+
+
+func set_body_size(logical_size_px: Vector2) -> void:
+	_logical_size_px = Vector2(
+		maxf(logical_size_px.x, 8.0),
+		maxf(logical_size_px.y, 8.0)
+	)
+
+	var local_collision_scale: float = 1.0
+	if _organ != null and _organ.definition != null:
+		local_collision_scale = _organ.definition.get_collision_scale()
+
+	_collision_size_px = (
+		_logical_size_px
+		* _global_collision_scale
+		* local_collision_scale
 	)
 
 	var rectangle_shape: RectangleShape2D = (
@@ -50,8 +69,12 @@ func set_body_size(value: Vector2) -> void:
 		rectangle_shape = RectangleShape2D.new()
 		_collision_shape.shape = rectangle_shape
 
-	rectangle_shape.size = _organ_size_px
+	rectangle_shape.size = _collision_size_px
 
 
 func get_body_size() -> Vector2:
-	return _organ_size_px
+	return _collision_size_px
+
+
+func get_logical_size() -> Vector2:
+	return _logical_size_px
