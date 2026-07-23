@@ -160,11 +160,14 @@ func get_occupied_cells(
 	if organ == null or organ.definition == null:
 		return cells
 
-	for y: int in organ.definition.grid_height_cells:
-		for x: int in organ.definition.grid_width_cells:
-			cells.append(
-				grid_position + Vector2i(x, y)
-			)
+	var footprint_cells: Array[Vector2i] = (
+		organ.definition.get_footprint_cells(
+			organ.rotation_index
+		)
+	)
+
+	for local_cell: Vector2i in footprint_cells:
+		cells.append(grid_position + local_cell)
 
 	return cells
 

@@ -5,6 +5,10 @@ extends Resource
 @export var icon: Texture2D
 @export var tint: Color = Color.WHITE
 
+@export_category("Animated Sprite")
+@export var sprite_frames: SpriteFrames
+@export var autoplay: bool = false
+
 @export_category("Sizing")
 @export_range(0.1, 8.0, 0.01)
 var visual_scale: float = 1.0

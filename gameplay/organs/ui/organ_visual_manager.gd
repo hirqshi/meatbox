@@ -3,6 +3,8 @@ extends Node
 
 @export_category("Scenes")
 @export var organ_visual_scene: PackedScene
+
+@export_category("Dependencies")
 @export var drag_overlay: Control
 
 @export_category("Presentation")
@@ -12,11 +14,12 @@ var _inventory: OrganInventoryComponent
 var _grid_view: OrganGridView
 var _pile: OrganPile
 
-var _visuals_by_organ: Dictionary = {}
-var _dragged_organ: OrganInstance
-var _drag_proxy_visual: OrganVisual
-
+var _visuals_by_organ: Dictionary[OrganInstance, OrganVisual] = {}
+var _dragged_organ: OrganInstance = null
 var _is_grid_insert_animating: bool = false
+
+var _suspend_sync_counter: int = 0
+var _is_releasing_drag_visual: bool = false
 
 
 func _ready() -> void:
@@ -33,10 +36,7 @@ func setup(
 	assert(inventory != null, "OrganVisualManager requires inventory.")
 	assert(grid_view != null, "OrganVisualManager requires grid_view.")
 	assert(pile != null, "OrganVisualManager requires pile.")
-	assert(
-		organ_visual_scene != null,
-		"OrganVisualManager requires organ_visual_scene."
-	)
+	assert(organ_visual_scene != null, "OrganVisualManager requires organ_visual_scene.")
 	assert(drag_overlay != null, "OrganVisualManager requires drag_overlay.")
 	assert(
 		presentation_settings != null,
@@ -51,8 +51,10 @@ func setup(
 
 	if not _inventory.organ_grid_changed.is_connected(_on_state_changed):
 		_inventory.organ_grid_changed.connect(_on_state_changed)
+
 	if not _inventory.loose_organ_added.is_connected(_on_state_changed):
 		_inventory.loose_organ_added.connect(_on_state_changed)
+
 	if not _inventory.loose_organ_removed.is_connected(_on_state_changed):
 		_inventory.loose_organ_removed.connect(_on_state_changed)
 
@@ -65,68 +67,148 @@ func setup(
 func set_dragged_organ(organ: OrganInstance) -> void:
 	_dragged_organ = organ
 
-	if is_instance_valid(_drag_proxy_visual):
-		_drag_proxy_visual.queue_free()
+	if organ == null:
+		return
 
-	_drag_proxy_visual = null
+	var visual: OrganVisual = _visuals_by_organ.get(organ)
+	if not is_instance_valid(visual):
+		return
+
+	visual.stop_all_motion()
+
+	var drag_scale: float = presentation_settings.global_icon_scale
+	drag_scale *= presentation_settings.drag_proxy_scale_multiplier
+
+	visual.visible = true
+	visual.z_index = presentation_settings.drag_visual_z_index
+	visual.set_global_icon_scale(drag_scale)
+	visual.set_sizes(
+		_get_drag_visual_logical_size_px(organ),
+		_get_organ_display_base_size_px(organ)
+	)
+	visual.snap_rotation_to(organ.get_rotation_radians())
+
+
+func clear_dragged_organ() -> void:
+	var organ: OrganInstance = _dragged_organ
+	_dragged_organ = null
 
 	if organ == null:
 		return
 
-	_drag_proxy_visual = organ_visual_scene.instantiate() as OrganVisual
-	if _drag_proxy_visual == null:
-		push_error("organ_visual_scene must instantiate OrganVisual.")
+	var visual: OrganVisual = _visuals_by_organ.get(organ)
+	if not is_instance_valid(visual):
 		return
 
-	drag_overlay.add_child(_drag_proxy_visual)
-
-	var drag_scale: float = presentation_settings.global_icon_scale
-	drag_scale *= presentation_settings.drag_proxy_scale_multiplier
-
-	_drag_proxy_visual.set_global_icon_scale(drag_scale)
-	_drag_proxy_visual.setup(organ, _get_organ_logical_size_px(organ))
-	_drag_proxy_visual.visible = true
-	_drag_proxy_visual.z_index = presentation_settings.drag_visual_z_index
-	_drag_proxy_visual.top_level = false
-	_drag_proxy_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var base_visual: OrganVisual = _visuals_by_organ.get(organ)
-	if is_instance_valid(base_visual):
-		base_visual.visible = false
+	visual.stop_all_motion()
+	visual.z_index = presentation_settings.installed_visual_z_index
 
 
-func clear_dragged_organ() -> void:
-	var dragged_organ: OrganInstance = _dragged_organ
+func release_dragged_organ_to_current_target(
+	organ: OrganInstance
+) -> void:
+	_is_releasing_drag_visual = true
+
+	if organ == null:
+		_dragged_organ = null
+		_is_releasing_drag_visual = false
+		return
+
+	var visual: OrganVisual = _visuals_by_organ.get(organ)
+
+	if is_instance_valid(visual):
+		visual.stop_all_motion()
+		visual.z_index = presentation_settings.installed_visual_z_index
 
 	_dragged_organ = null
+	_sync_single_visual_target(organ, true)
 
-	if is_instance_valid(_drag_proxy_visual):
-		_drag_proxy_visual.queue_free()
-
-	_drag_proxy_visual = null
-
-	var base_visual: OrganVisual = _visuals_by_organ.get(dragged_organ)
-	if is_instance_valid(base_visual):
-		base_visual.visible = true
+	_is_releasing_drag_visual = false
 
 
-func update_drag_proxy(
-	viewport_position: Vector2,
-	rotation_radians: float = 0.0
+func hide_dragged_visual_immediately() -> void:
+	if _dragged_organ == null:
+		return
+
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if not is_instance_valid(visual):
+		return
+
+	visual.stop_all_motion()
+	visual.visible = false
+
+
+func update_drag_visual(
+	viewport_position: Vector2
 ) -> void:
-	if not is_instance_valid(_drag_proxy_visual):
+	if _dragged_organ == null:
+		return
+
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if not is_instance_valid(visual):
 		return
 
 	var drag_scale: float = presentation_settings.global_icon_scale
 	drag_scale *= presentation_settings.drag_proxy_scale_multiplier
 
-	_drag_proxy_visual.visible = true
-	_drag_proxy_visual.set_global_icon_scale(drag_scale)
-	_drag_proxy_visual.set_logical_size(_get_organ_logical_size_px(_dragged_organ))
-	_drag_proxy_visual.snap_to_overlay_position(
-		viewport_to_overlay_local(viewport_position),
-		rotation_radians
+	visual.visible = true
+	visual.z_index = presentation_settings.drag_visual_z_index
+	visual.set_global_icon_scale(drag_scale)
+	visual.set_sizes(
+		_get_drag_visual_logical_size_px(_dragged_organ),
+		_get_organ_display_base_size_px(_dragged_organ)
 	)
+	visual.snap_position_to_overlay_center(
+		viewport_to_overlay_local(viewport_position)
+	)
+
+
+func get_drag_visual_viewport_center() -> Vector2:
+	if _dragged_organ == null:
+		return Vector2.ZERO
+
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if not is_instance_valid(visual):
+		return Vector2.ZERO
+
+	return drag_overlay.get_global_transform_with_canvas() * visual.position
+
+
+func rotate_drag_visual_to(
+	rotation_radians: float,
+	smooth: bool = true
+) -> void:
+	if _dragged_organ == null:
+		return
+
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if not is_instance_valid(visual):
+		return
+
+	if smooth:
+		visual.tween_rotation_to(rotation_radians)
+	else:
+		visual.snap_rotation_to(rotation_radians)
+
+
+func snap_organ_to_current_target_next_frame(
+	organ: OrganInstance
+) -> void:
+	_snap_organ_to_current_target_next_frame(organ)
+
+
+func _snap_organ_to_current_target_next_frame(
+	organ: OrganInstance
+) -> void:
+	await get_tree().process_frame
+
+	if not is_instance_valid(self):
+		return
+
+	if organ == null:
+		return
+
+	snap_organ_to_current_target(organ)
 
 
 func sync_visual_targets(force_snap: bool = false) -> void:
@@ -135,6 +217,9 @@ func sync_visual_targets(force_snap: bool = false) -> void:
 
 func _process(_delta: float) -> void:
 	if _dragged_organ != null:
+		return
+
+	if _is_releasing_drag_visual:
 		return
 
 	_sync_visual_targets(false)
@@ -169,8 +254,6 @@ func _refresh_visuals() -> void:
 
 		_visuals_by_organ.erase(organ)
 
-	_sync_visual_targets(true)
-
 
 func _ensure_visual(organ: OrganInstance) -> void:
 	if organ == null:
@@ -179,13 +262,11 @@ func _ensure_visual(organ: OrganInstance) -> void:
 	if _visuals_by_organ.has(organ):
 		var existing_visual: OrganVisual = _visuals_by_organ.get(organ)
 		if is_instance_valid(existing_visual):
-			existing_visual.set_global_icon_scale(
-				presentation_settings.global_icon_scale
+			existing_visual.set_sizes(
+				_get_organ_logical_size_px(organ),
+				_get_organ_display_base_size_px(organ)
 			)
-			existing_visual.set_logical_size(_get_organ_logical_size_px(organ))
-			existing_visual.z_index = (
-				presentation_settings.installed_visual_z_index
-			)
+			existing_visual.z_index = presentation_settings.installed_visual_z_index
 		return
 
 	var visual: OrganVisual = organ_visual_scene.instantiate() as OrganVisual
@@ -195,9 +276,13 @@ func _ensure_visual(organ: OrganInstance) -> void:
 
 	drag_overlay.add_child(visual)
 	visual.set_global_icon_scale(presentation_settings.global_icon_scale)
-	visual.setup(organ, _get_organ_logical_size_px(organ))
+	visual.setup(
+		organ,
+		_get_organ_logical_size_px(organ),
+		_get_organ_display_base_size_px(organ)
+	)
 	visual.z_index = presentation_settings.installed_visual_z_index
-	visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	visual.visible = true
 
 	_visuals_by_organ[organ] = visual
 
@@ -207,118 +292,116 @@ func _sync_visual_targets(force_snap: bool = false) -> void:
 		return
 
 	for organ: OrganInstance in _visuals_by_organ:
-		var visual: OrganVisual = _visuals_by_organ.get(organ)
+		_sync_single_visual_target(organ, force_snap)
 
-		if not is_instance_valid(visual):
-			continue
 
-		if organ == _dragged_organ:
-			visual.visible = false
-			continue
+func _sync_single_visual_target(
+	organ: OrganInstance,
+	force_snap: bool
+) -> void:
+	var visual: OrganVisual = _visuals_by_organ.get(organ)
+	if not is_instance_valid(visual):
+		return
 
-		if _inventory.is_organ_installed(organ):
-			visual.visible = true
-			visual.set_global_icon_scale(
-				presentation_settings.global_icon_scale
+	if organ == _dragged_organ:
+		visual.visible = true
+		return
+
+	if _inventory.is_organ_installed(organ):
+		visual.visible = true
+		visual.z_index = presentation_settings.installed_visual_z_index
+		visual.set_global_icon_scale(presentation_settings.global_icon_scale)
+		visual.set_sizes(
+			_get_organ_logical_size_px(organ),
+			_get_organ_display_base_size_px(organ)
+		)
+
+		var installed_overlay_position: Vector2 = (
+			canvas_to_overlay_local(
+				_grid_view.get_organ_canvas_center(organ)
 			)
-			visual.set_logical_size(_get_organ_logical_size_px(organ))
+		)
+		var installed_rotation: float = organ.get_rotation_radians()
 
-			var installed_overlay_position: Vector2 = (
-				canvas_to_overlay_local(
-					_grid_view.get_organ_canvas_center(organ)
-				)
+		if force_snap:
+			visual.snap_to_overlay_position(
+				installed_overlay_position,
+				installed_rotation
 			)
-
-			if force_snap:
-				visual.snap_to_overlay_position(
-					installed_overlay_position,
-					0.0
-				)
-			else:
-				visual.tween_to_overlay_position(
-					installed_overlay_position,
-					0.0
-				)
-
-			continue
-
-		if _pile.has_loose_organ(organ):
-			visual.visible = true
-			visual.set_global_icon_scale(
-				presentation_settings.global_icon_scale
+		else:
+			visual.tween_to_overlay_position(
+				installed_overlay_position,
+				installed_rotation
 			)
-			visual.set_logical_size(_get_organ_logical_size_px(organ))
+		return
 
-			var pile_overlay_position: Vector2 = (
-				canvas_to_overlay_local(
-					_pile.get_body_canvas_center(organ)
-				)
-			)
+	if _pile.has_loose_organ(organ):
+		var pile_canvas_center_variant: Variant = (
+			_pile.try_get_body_canvas_center(organ)
+		)
+		var pile_rotation_variant: Variant = (
+			_pile.try_get_body_rotation(organ)
+		)
 
-			if force_snap:
-				visual.snap_to_overlay_position(
-					pile_overlay_position,
-					_pile.get_body_rotation(organ)
-				)
-			else:
-				visual.tween_to_overlay_position(
-					pile_overlay_position,
-					_pile.get_body_rotation(organ)
-				)
+		if pile_canvas_center_variant == null or pile_rotation_variant == null:
+			return
 
-			continue
+		visual.visible = true
+		visual.z_index = presentation_settings.installed_visual_z_index
+		visual.set_global_icon_scale(presentation_settings.global_icon_scale)
+		visual.set_sizes(
+			_get_drag_visual_logical_size_px(organ),
+			_get_organ_display_base_size_px(organ)
+		)
 
-		visual.visible = false
+		var pile_overlay_position: Vector2 = (
+			canvas_to_overlay_local(pile_canvas_center_variant as Vector2)
+		)
+		var pile_rotation: float = pile_rotation_variant as float
+
+		visual.snap_to_overlay_position(
+			pile_overlay_position,
+			pile_rotation
+		)
+		return
+
+	visual.visible = false
+
+
+func begin_visual_sync_suspension() -> void:
+	_suspend_sync_counter += 1
+
+
+func end_visual_sync_suspension() -> void:
+	_suspend_sync_counter = maxi(_suspend_sync_counter - 1, 0)
+
+	if _suspend_sync_counter == 0 and _dragged_organ == null:
+		_sync_visual_targets(true)
 
 
 func _get_organ_logical_size_px(organ: OrganInstance) -> Vector2:
 	if organ == null or organ.definition == null:
 		return Vector2(48.0, 48.0)
 
-	var cell_side_px: float = _grid_view.get_cell_side_px()
+	return _grid_view.get_organ_pixel_size(organ)
 
-	return Vector2(
-		cell_side_px * float(organ.definition.grid_width_cells)
-		+ _grid_view.cell_gap_px * float(organ.definition.grid_width_cells - 1),
-		cell_side_px * float(organ.definition.grid_height_cells)
-		+ _grid_view.cell_gap_px * float(organ.definition.grid_height_cells - 1)
-	)
+
+func _get_drag_visual_logical_size_px(organ: OrganInstance) -> Vector2:
+	if organ == null or organ.definition == null:
+		return Vector2(48.0, 48.0)
+
+	return _grid_view.get_organ_base_pixel_size(organ)
+
+
+func _get_organ_display_base_size_px(organ: OrganInstance) -> Vector2:
+	if organ == null or organ.definition == null:
+		return Vector2(48.0, 48.0)
+
+	return _grid_view.get_organ_base_pixel_size(organ)
 
 
 func snap_organ_to_current_target(organ: OrganInstance) -> void:
-	var visual: OrganVisual = _visuals_by_organ.get(organ)
-
-	if not is_instance_valid(visual):
-		return
-
-	if _inventory == null:
-		return
-
-	if _inventory.is_organ_installed(organ):
-		visual.visible = true
-		visual.set_global_icon_scale(presentation_settings.global_icon_scale)
-		visual.set_logical_size(_get_organ_logical_size_px(organ))
-		visual.snap_to_overlay_position(
-			canvas_to_overlay_local(
-				_grid_view.get_organ_canvas_center(organ)
-			),
-			0.0
-		)
-		return
-
-	if _pile.has_loose_organ(organ):
-		visual.visible = true
-		visual.set_global_icon_scale(presentation_settings.global_icon_scale)
-		visual.set_logical_size(_get_organ_logical_size_px(organ))
-		visual.snap_to_overlay_position(
-			canvas_to_overlay_local(
-				_pile.get_body_canvas_center(organ)
-			),
-			_pile.get_body_rotation(organ)
-		)
-		return
-
-	visual.visible = false
+	_sync_single_visual_target(organ, true)
 
 
 func viewport_to_overlay_local(
@@ -353,57 +436,78 @@ func _on_presentation_settings_changed() -> void:
 
 	_apply_presentation_settings_to_dependencies()
 
-	if is_instance_valid(_drag_proxy_visual):
-		var drag_scale: float = presentation_settings.global_icon_scale
-		drag_scale *= presentation_settings.drag_proxy_scale_multiplier
-		_drag_proxy_visual.set_global_icon_scale(drag_scale)
-		_drag_proxy_visual.set_logical_size(
-			_get_organ_logical_size_px(_dragged_organ)
-		)
+	if _dragged_organ != null:
+		var dragged_visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+		if is_instance_valid(dragged_visual):
+			var drag_scale: float = presentation_settings.global_icon_scale
+			drag_scale *= presentation_settings.drag_proxy_scale_multiplier
+			dragged_visual.set_global_icon_scale(drag_scale)
+			dragged_visual.set_sizes(
+				_get_drag_visual_logical_size_px(_dragged_organ),
+				_get_organ_display_base_size_px(_dragged_organ)
+			)
 
 	_refresh_visuals()
 	_sync_visual_targets(true)
 
 
-func _on_state_changed(_organ: OrganInstance = null) -> void:
+func _on_state_changed(changed_organ: OrganInstance = null) -> void:
 	_refresh_visuals()
 
+	if _suspend_sync_counter > 0:
+		return
+
 	if _is_grid_insert_animating:
+		return
+
+	if changed_organ != null and changed_organ == _dragged_organ:
 		return
 
 	_sync_visual_targets(true)
 
 
 func play_hover_enter_for(organ: OrganInstance) -> void:
+	if organ == _dragged_organ:
+		return
+
 	var visual: OrganVisual = _visuals_by_organ.get(organ)
 	if is_instance_valid(visual):
 		visual.play_hover_enter()
 
 
 func play_hover_exit_for(organ: OrganInstance) -> void:
+	if organ == _dragged_organ:
+		return
+
 	var visual: OrganVisual = _visuals_by_organ.get(organ)
 	if is_instance_valid(visual):
 		visual.play_hover_exit()
 
 
 func play_click_feedback_for(organ: OrganInstance) -> void:
+	if organ == _dragged_organ:
+		return
+
 	var visual: OrganVisual = _visuals_by_organ.get(organ)
 	if is_instance_valid(visual):
 		visual.play_click_shake()
 
 
 func play_drag_pickup_feedback() -> void:
-	if not is_instance_valid(_drag_proxy_visual):
+	if _dragged_organ == null:
 		return
 
-	_drag_proxy_visual.play_click_shake()
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if is_instance_valid(visual):
+		visual.play_click_shake()
 
 
 func play_grid_insert_animation() -> void:
 	if _dragged_organ == null:
 		return
 
-	if not is_instance_valid(_drag_proxy_visual):
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if not is_instance_valid(visual):
 		return
 
 	if _inventory == null or _grid_view == null:
@@ -420,9 +524,9 @@ func play_grid_insert_animation() -> void:
 		)
 	)
 
-	_drag_proxy_visual.tween_to_overlay_position(
+	visual.tween_to_overlay_position(
 		target_overlay_position,
-		0.0
+		_dragged_organ.get_rotation_radians()
 	)
 
 	var move_duration_sec: float = 0.12
@@ -436,8 +540,8 @@ func play_grid_insert_animation() -> void:
 
 	await get_tree().create_timer(move_duration_sec).timeout
 
-	if is_instance_valid(_drag_proxy_visual):
-		_drag_proxy_visual.play_insert_shake()
+	if is_instance_valid(visual):
+		visual.play_insert_shake()
 
 	var shake_duration_sec: float = 0.14
 	if (
@@ -451,3 +555,12 @@ func play_grid_insert_animation() -> void:
 	await get_tree().create_timer(shake_duration_sec).timeout
 
 	_is_grid_insert_animating = false
+
+
+func play_drag_rotate_feedback(direction: int) -> void:
+	if _dragged_organ == null:
+		return
+
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if is_instance_valid(visual):
+		visual.play_rotate_feedback(direction)

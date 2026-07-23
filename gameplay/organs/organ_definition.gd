@@ -10,11 +10,14 @@ extends Resource
 @export var visual_definition: OrganVisualDefinition
 @export var grid_tint: Color = Color.WHITE
 
-@export_category("Grid Shape")
-@export_range(1, 4, 1)
+@export_category("Grid")
+@export var footprint: OrganFootprint
+
+@export_group("Rectangle Helper")
+@export_range(1, 8, 1)
 var grid_width_cells: int = 1
 
-@export_range(1, 5, 1)
+@export_range(1, 8, 1)
 var grid_height_cells: int = 1
 
 @export_category("Base Effects")
@@ -70,3 +73,26 @@ func get_icon() -> Texture2D:
 		return null
 
 	return visual_definition.icon
+
+
+func get_footprint() -> OrganFootprint:
+	if footprint != null:
+		return footprint
+
+	var generated: OrganFootprint = OrganFootprint.new()
+	generated.make_rectangle(
+		Vector2i(grid_width_cells, grid_height_cells)
+	)
+	return generated
+
+
+func get_footprint_cells(
+	rotation_index: int = 0
+) -> Array[Vector2i]:
+	return get_footprint().get_cells_rotated(rotation_index)
+
+
+func get_footprint_bounds(
+	rotation_index: int = 0
+) -> Rect2i:
+	return get_footprint().get_bounds(rotation_index)

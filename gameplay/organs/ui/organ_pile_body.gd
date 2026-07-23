@@ -1,6 +1,8 @@
 class_name OrganPileBody
 extends RigidBody2D
 
+signal teleport_applied
+
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 
 var _organ: OrganInstance
@@ -8,6 +10,12 @@ var _logical_size_px: Vector2 = Vector2.ONE
 var _collision_size_px: Vector2 = Vector2.ONE
 var _global_collision_scale: float = 1.0
 var _pile: OrganPile
+
+var _has_pending_teleport: bool = false
+var _pending_global_position: Vector2 = Vector2.ZERO
+var _pending_rotation: float = 0.0
+var _pending_linear_velocity: Vector2 = Vector2.ZERO
+var _pending_angular_velocity: float = 0.0
 
 
 func setup(
@@ -78,3 +86,36 @@ func get_body_size() -> Vector2:
 
 func get_logical_size() -> Vector2:
 	return _logical_size_px
+
+
+func teleport_and_release(
+	target_position: Vector2,
+	target_rotation_radians: float,
+	release_linear_velocity: Vector2,
+	release_angular_velocity: float
+) -> void:
+	_pending_global_position = target_position
+	_pending_rotation = target_rotation_radians
+	_pending_linear_velocity = release_linear_velocity
+	_pending_angular_velocity = release_angular_velocity
+	_has_pending_teleport = true
+
+	position = target_position
+	rotation = target_rotation_radians
+	linear_velocity = Vector2.ZERO
+	angular_velocity = 0.0
+	sleeping = false
+	freeze = false
+
+
+func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
+	if not _has_pending_teleport:
+		return
+
+	state.transform = Transform2D(_pending_rotation, _pending_global_position)
+	state.linear_velocity = _pending_linear_velocity
+	state.angular_velocity = _pending_angular_velocity
+	state.sleeping = false
+
+	_has_pending_teleport = false
+	teleport_applied.emit()

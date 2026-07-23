@@ -2,14 +2,9 @@
 
 [ext_resource type="Script" uid="uid://dsj4fo840slpi" path="res://gameplay/organs/ui/organ_visual.gd" id="1_l5ksk"]
 
-[node name="OrganVisual" type="Control" unique_id=233179806]
-layout_mode = 3
-anchors_preset = 0
-mouse_filter = 2
+[node name="OrganVisual" type="Node2D" unique_id=1263274889]
 script = ExtResource("1_l5ksk")
 
-[node name="Icon" type="TextureRect" parent="." unique_id=661236109]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-mouse_filter = 2
+[node name="Pivot" type="Node2D" parent="." unique_id=186790790]
+
+[node name="Sprite" type="AnimatedSprite2D" parent="Pivot" unique_id=1077622920]

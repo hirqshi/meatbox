@@ -22,6 +22,7 @@ var _inventory: OrganInventoryComponent
 var _grid_view: OrganGridView
 var _bodies_by_organ: Dictionary[OrganInstance, OrganPileBody] = {}
 var _random: RandomNumberGenerator = RandomNumberGenerator.new()
+var _suppress_auto_add_counter: int = 0
 
 
 func _ready() -> void:
@@ -65,7 +66,8 @@ func setup(
 
 
 func has_loose_organ(organ: OrganInstance) -> bool:
-	return _bodies_by_organ.has(organ)
+	var body: OrganPileBody = _bodies_by_organ.get(organ)
+	return is_instance_valid(body)
 
 
 func set_body_active(
@@ -88,12 +90,40 @@ func set_body_active(
 	else:
 		body.collision_layer = 0
 		body.collision_mask = 0
-		body.freeze = true
 		body.linear_velocity = Vector2.ZERO
 		body.angular_velocity = 0.0
+		body.sleeping = true
+		body.freeze = true
 
 
 func restore_loose_organ_at_viewport_position(
+	organ: OrganInstance,
+	organ_center_viewport_position: Vector2,
+	release_velocity: Vector2
+) -> void:
+	var body: OrganPileBody = _bodies_by_organ.get(organ)
+
+	if not is_instance_valid(body):
+		return
+
+	var items_local_position: Vector2 = (
+		viewport_to_items_local_position(organ_center_viewport_position)
+	)
+	var body_canvas_position: Vector2 = (
+		_items.get_global_transform_with_canvas() * items_local_position
+	)
+
+	set_body_active(organ, true)
+
+	body.teleport_and_release(
+		body_canvas_position,
+		organ.get_rotation_radians(),
+		release_velocity,
+		_random.randf_range(-2.5, 2.5)
+	)
+
+
+func restore_loose_organ_at_viewport_position_and_wait(
 	organ: OrganInstance,
 	organ_center_viewport_position: Vector2,
 	release_velocity: Vector2
@@ -107,29 +137,58 @@ func restore_loose_organ_at_viewport_position(
 		organ_center_viewport_position
 	)
 	var items_local_position: Vector2 = pile_local_position - _items.position
+	var body_global_position: Vector2 = (
+		get_global_transform_with_canvas() * items_local_position
+	)
 
-	body.position = items_local_position
 	set_body_active(organ, true)
-	body.linear_velocity = release_velocity
-	body.angular_velocity = _random.randf_range(-2.5, 2.5)
+
+	body.teleport_and_release(
+		body_global_position,
+		organ.get_rotation_radians(),
+		release_velocity,
+		_random.randf_range(-2.5, 2.5)
+	)
+
+	await body.teleport_applied
+
+
+func ensure_loose_organ_body_at_viewport_position(
+	organ: OrganInstance,
+	organ_center_viewport_position: Vector2
+) -> void:
+	if organ == null:
+		return
+
+	if _bodies_by_organ.has(organ):
+		return
+
+	var items_local_position: Vector2 = (
+		viewport_to_items_local_position(organ_center_viewport_position)
+	)
+
+	_add_body(
+		organ,
+		items_local_position,
+		organ.get_rotation_radians()
+	)
 
 
 func get_body_viewport_center(organ: OrganInstance) -> Vector2:
+	return get_body_canvas_center(organ)
+
+
+func get_body_center_to_viewport_point_offset(
+	organ: OrganInstance,
+	viewport_position: Vector2
+) -> Vector2:
 	var body: OrganPileBody = _bodies_by_organ.get(organ)
 
 	if not is_instance_valid(body):
 		return Vector2.ZERO
 
-	return get_global_transform_with_canvas() * (_items.position + body.position)
-
-
-func get_body_canvas_center(organ: OrganInstance) -> Vector2:
-	var body: OrganPileBody = _bodies_by_organ.get(organ)
-
-	if not is_instance_valid(body):
-		return Vector2.ZERO
-
-	return get_global_transform_with_canvas() * (_items.position + body.position)
+	var body_center_viewport: Vector2 = get_body_viewport_center(organ)
+	return viewport_position - body_center_viewport
 
 
 func get_body_rotation(organ: OrganInstance) -> float:
@@ -138,7 +197,11 @@ func get_body_rotation(organ: OrganInstance) -> float:
 	if not is_instance_valid(body):
 		return 0.0
 
-	return body.global_rotation
+	return body.rotation
+
+
+func get_body_rotation_radians(organ: OrganInstance) -> float:
+	return get_body_rotation(organ)
 
 
 func is_viewport_point_inside_pile(
@@ -187,7 +250,11 @@ func _sync_bodies() -> void:
 		_add_body(organ)
 
 
-func _add_body(organ: OrganInstance) -> void:
+func _add_body(
+	organ: OrganInstance,
+	initial_position: Vector2 = Vector2.INF,
+	initial_rotation: float = 0.0
+) -> void:
 	if organ == null or organ.definition == null:
 		return
 
@@ -199,11 +266,10 @@ func _add_body(organ: OrganInstance) -> void:
 	)
 
 	if body == null:
-		push_error(
-			"organ_pile_body_scene must instantiate OrganPileBody."
-		)
+		push_error("organ_pile_body_scene must instantiate OrganPileBody.")
 		return
 
+	body.visible = false
 	_items.add_child(body)
 
 	body.setup(
@@ -216,8 +282,14 @@ func _add_body(organ: OrganInstance) -> void:
 
 	body.collision_layer = PILE_COLLISION_LAYER
 	body.collision_mask = PILE_COLLISION_LAYER
-	body.position = _get_spawn_position(organ)
 
+	if initial_position == Vector2.INF:
+		body.position = _get_spawn_position(organ)
+	else:
+		body.position = initial_position
+
+	body.rotation = initial_rotation
+	body.visible = true
 	_bodies_by_organ[organ] = body
 
 
@@ -248,14 +320,7 @@ func _get_organ_size_px(organ: OrganInstance) -> Vector2:
 	if _grid_view == null:
 		return Vector2(48.0, 48.0)
 
-	var cell_side_px: float = _grid_view.get_cell_side_px()
-
-	return Vector2(
-		cell_side_px * float(organ.definition.grid_width_cells)
-		+ _grid_view.cell_gap_px * float(organ.definition.grid_width_cells - 1),
-		cell_side_px * float(organ.definition.grid_height_cells)
-		+ _grid_view.cell_gap_px * float(organ.definition.grid_height_cells - 1)
-	)
+	return _grid_view.get_organ_base_pixel_size(organ)
 
 
 func _rebuild_bounds() -> void:
@@ -342,12 +407,23 @@ func _disconnect_inventory() -> void:
 
 
 func _on_loose_organ_added(organ: OrganInstance) -> void:
+	if _suppress_auto_add_counter > 0:
+		return
+
 	_add_body(organ)
 
 
 func _on_loose_organ_removed(organ: OrganInstance) -> void:
 	_remove_body(organ)
 
+
+func begin_suppress_auto_add() -> void:
+	_suppress_auto_add_counter += 1
+
+
+func end_suppress_auto_add() -> void:
+	_suppress_auto_add_counter = maxi(_suppress_auto_add_counter - 1, 0)
+	
 
 func _on_resized() -> void:
 	_rebuild_bounds()
@@ -389,6 +465,46 @@ func _try_pick_body_at_local_point(
 			best_z_index = body.z_index
 
 	return best_body
+
+
+func viewport_to_items_local_position(
+	viewport_position: Vector2
+) -> Vector2:
+	var canvas_position: Vector2 = (
+		get_viewport().get_canvas_transform().affine_inverse() * viewport_position
+	)
+	return _items.to_local(canvas_position)
+
+
+func get_body_canvas_center(organ: OrganInstance) -> Vector2:
+	var body: OrganPileBody = _bodies_by_organ.get(organ)
+
+	if not is_instance_valid(body):
+		return Vector2.ZERO
+
+	return _items.get_global_transform_with_canvas() * body.position
+
+
+func try_get_body_canvas_center(
+	organ: OrganInstance
+) -> Variant:
+	var body: OrganPileBody = _bodies_by_organ.get(organ)
+
+	if not is_instance_valid(body):
+		return null
+
+	return get_global_transform_with_canvas() * (_items.position + body.position)
+
+
+func try_get_body_rotation(
+	organ: OrganInstance
+) -> Variant:
+	var body: OrganPileBody = _bodies_by_organ.get(organ)
+
+	if not is_instance_valid(body):
+		return null
+
+	return body.rotation
 
 
 func _gui_input(event: InputEvent) -> void:

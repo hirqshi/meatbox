@@ -142,23 +142,29 @@ func get_organ_rect(organ: OrganInstance) -> Rect2:
 	if grid_position == Vector2i(-1, -1):
 		return Rect2()
 
-	var first_cell_rect: Rect2 = get_cell_rect(grid_position)
+	var bounds: Rect2i = organ.definition.get_footprint_bounds(
+		organ.rotation_index
+	)
+
 	var side: float = get_cell_side_px()
+	var step: float = side + cell_gap_px
+	var origin: Vector2 = get_grid_origin_local()
 
-	var organ_width: float = (
-		side * float(organ.definition.grid_width_cells)
-		+ cell_gap_px * float(organ.definition.grid_width_cells - 1)
+	var top_left_cell: Vector2i = grid_position + bounds.position
+
+	var rect_position: Vector2 = origin + Vector2(
+		float(top_left_cell.x) * step,
+		float(top_left_cell.y) * step
 	)
 
-	var organ_height: float = (
-		side * float(organ.definition.grid_height_cells)
-		+ cell_gap_px * float(organ.definition.grid_height_cells - 1)
+	var rect_size: Vector2 = Vector2(
+		float(bounds.size.x) * side
+		+ float(maxi(bounds.size.x - 1, 0)) * cell_gap_px,
+		float(bounds.size.y) * side
+		+ float(maxi(bounds.size.y - 1, 0)) * cell_gap_px
 	)
 
-	return Rect2(
-		first_cell_rect.position,
-		Vector2(organ_width, organ_height)
-	)
+	return Rect2(rect_position, rect_size)
 
 
 func get_organ_viewport_center(organ: OrganInstance) -> Vector2:
@@ -173,27 +179,83 @@ func get_organ_canvas_center(organ: OrganInstance) -> Vector2:
 	return get_global_transform_with_canvas() * local_center
 
 
+func get_organ_pixel_size(organ: OrganInstance) -> Vector2:
+	if organ == null or organ.definition == null:
+		return Vector2(48.0, 48.0)
+
+	var bounds: Rect2i = organ.definition.get_footprint_bounds(
+		organ.rotation_index
+	)
+
+	var side: float = get_cell_side_px()
+
+	return Vector2(
+		float(bounds.size.x) * side
+		+ float(maxi(bounds.size.x - 1, 0)) * cell_gap_px,
+		float(bounds.size.y) * side
+		+ float(maxi(bounds.size.y - 1, 0)) * cell_gap_px
+	)
+
+
+func get_organ_pixel_size_for_rotation(
+	organ: OrganInstance,
+	rotation_index: int
+) -> Vector2:
+	if organ == null or organ.definition == null:
+		return Vector2(48.0, 48.0)
+
+	var bounds: Rect2i = organ.definition.get_footprint_bounds(
+		rotation_index
+	)
+
+	var side: float = get_cell_side_px()
+
+	return Vector2(
+		float(bounds.size.x) * side
+		+ float(maxi(bounds.size.x - 1, 0)) * cell_gap_px,
+		float(bounds.size.y) * side
+		+ float(maxi(bounds.size.y - 1, 0)) * cell_gap_px
+	)
+
+
+func get_organ_base_pixel_size(organ: OrganInstance) -> Vector2:
+	return get_organ_pixel_size_for_rotation(organ, 0)
+
+
 func get_drop_grid_position_from_viewport_point(
 	viewport_position: Vector2,
-	organ: OrganInstance
+	drag_anchor_cell_local: Vector2i
 ) -> Vector2i:
 	var local_point: Vector2 = viewport_to_local_position(viewport_position)
-	return get_drop_grid_position_from_local_point(local_point, organ)
+	return get_drop_grid_position_from_local_point(
+		local_point,
+		drag_anchor_cell_local
+	)
 
 
 func get_drop_grid_position_from_local_point(
 	local_point: Vector2,
-	organ: OrganInstance
+	drag_anchor_cell_local: Vector2i
 ) -> Vector2i:
-	if organ == null or organ.definition == null:
+	var hovered_cell: Vector2i = get_hovered_cell_from_local_point(local_point)
+
+	if hovered_cell == Vector2i(-1, -1):
 		return Vector2i(-1, -1)
 
+	return hovered_cell - drag_anchor_cell_local
+
+
+func get_hovered_cell_from_local_point(
+	local_point: Vector2
+) -> Vector2i:
 	var grid_rect: Rect2 = get_grid_rect_local()
+
 	if not grid_rect.has_point(local_point):
 		return Vector2i(-1, -1)
 
 	var side: float = get_cell_side_px()
 	var step: float = side + cell_gap_px
+
 	if step <= 0.0:
 		return Vector2i(-1, -1)
 
@@ -210,12 +272,47 @@ func get_drop_grid_position_from_local_point(
 	if cell_local_x > side or cell_local_y > side:
 		return Vector2i(-1, -1)
 
-	var offset_cells: Vector2i = Vector2i(
-		organ.definition.grid_width_cells / 2,
-		organ.definition.grid_height_cells / 2
+	return hovered_cell
+
+
+func get_local_cell_from_viewport_point_for_organ(
+	organ: OrganInstance,
+	viewport_position: Vector2
+) -> Vector2i:
+	if _model == null or organ == null or organ.definition == null:
+		return Vector2i.ZERO
+
+	var grid_origin: Vector2i = _model.get_position(organ)
+	if grid_origin == Vector2i(-1, -1):
+		return Vector2i.ZERO
+
+	var hovered_cell: Vector2i = get_hovered_cell_from_local_point(
+		viewport_to_local_position(viewport_position)
 	)
 
-	return hovered_cell - offset_cells
+	if hovered_cell == Vector2i(-1, -1):
+		return Vector2i.ZERO
+
+	var local_cell: Vector2i = hovered_cell - grid_origin
+	var footprint_cells: Array[Vector2i] = (
+		organ.definition.get_footprint_cells(organ.rotation_index)
+	)
+
+	if footprint_cells.has(local_cell):
+		return local_cell
+
+	var nearest_cell: Vector2i = footprint_cells[0]
+	var nearest_distance_sq: int = 2147483647
+
+	for cell: Vector2i in footprint_cells:
+		var delta: Vector2i = cell - local_cell
+		var distance_sq: int = delta.x * delta.x + delta.y * delta.y
+
+		if distance_sq < nearest_distance_sq:
+			nearest_distance_sq = distance_sq
+			nearest_cell = cell
+
+	return nearest_cell
 
 
 func is_viewport_point_over_grid(
@@ -227,7 +324,8 @@ func is_viewport_point_over_grid(
 
 func update_drop_preview_for_viewport_position(
 	organ: OrganInstance,
-	viewport_position: Vector2
+	viewport_position: Vector2,
+	drag_anchor_cell_local: Vector2i
 ) -> void:
 	if _model == null or organ == null:
 		clear_drop_preview()
@@ -236,7 +334,7 @@ func update_drop_preview_for_viewport_position(
 	var target_position: Vector2i = (
 		get_drop_grid_position_from_viewport_point(
 			viewport_position,
-			organ
+			drag_anchor_cell_local
 		)
 	)
 
@@ -263,7 +361,8 @@ func clear_drop_preview() -> void:
 
 func can_place_organ_at_viewport_position(
 	organ: OrganInstance,
-	viewport_position: Vector2
+	viewport_position: Vector2,
+	drag_anchor_cell_local: Vector2i
 ) -> bool:
 	if _model == null or organ == null:
 		return false
@@ -271,7 +370,7 @@ func can_place_organ_at_viewport_position(
 	var target_position: Vector2i = (
 		get_drop_grid_position_from_viewport_point(
 			viewport_position,
-			organ
+			drag_anchor_cell_local
 		)
 	)
 
@@ -356,7 +455,11 @@ func _sync_views() -> void:
 
 		var removed_view: OrganView = _views_by_organ.get(organ)
 		if is_instance_valid(removed_view):
+			removed_view.visible = false
+			removed_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			removed_view.queue_free()
+
+		_views_by_organ.erase(organ)
 
 		_views_by_organ.erase(organ)
 

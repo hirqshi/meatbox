@@ -1,22 +1,31 @@
 class_name OrganVisual
-extends Control
+extends Node2D
+
+const DEFAULT_ANIMATION: StringName = &"default"
 
 @export_range(0.1, 8.0, 0.01)
 var global_icon_scale: float = 1.0
 
-@onready var _icon: TextureRect = $Icon
+@onready var _pivot: Node2D = $Pivot
+@onready var _sprite: AnimatedSprite2D = $Pivot/Sprite
 
 var _organ: OrganInstance
 var _logical_size_px: Vector2 = Vector2(8.0, 8.0)
+var _display_base_size_px: Vector2 = Vector2(8.0, 8.0)
 var _visual_size_px: Vector2 = Vector2(8.0, 8.0)
 var _is_hovered: bool = false
 
-var _move_tween: Tween
+var _position_tween: Tween
+var _rotation_tween: Tween
 var _scale_tween: Tween
 var _shake_tween: Tween
+var _sprite_rotation_tween: Tween
 
-var _icon_rest_position: Vector2 = Vector2.ZERO
-var _icon_rest_rotation: float = 0.0
+var _rotation_from: float = 0.0
+var _rotation_to: float = 0.0
+
+var _sprite_rest_position: Vector2 = Vector2.ZERO
+var _sprite_rest_rotation: float = 0.0
 
 var _shake_primary_offset_px: float = 0.0
 var _shake_secondary_offset_px: float = 0.0
@@ -28,23 +37,27 @@ var _shake_rotation_radians: float = 0.0
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_level = false
-
-	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
+	visible = true
+	_pivot.scale = Vector2.ONE
+	_pivot.rotation = 0.0
+	_sprite.centered = true
+	_sprite.position = Vector2.ZERO
+	_sprite.rotation = 0.0
+	_apply_definition_visuals()
 	_apply_layout()
 
 
-func setup(organ: OrganInstance, logical_size_px: Vector2) -> void:
+func setup(
+	organ: OrganInstance,
+	logical_size_px: Vector2,
+	display_base_size_px: Vector2 = Vector2.ZERO
+) -> void:
 	assert(organ != null, "OrganVisual requires OrganInstance.")
 	assert(organ.definition != null, "OrganVisual requires OrganDefinition.")
 
 	_organ = organ
 	_apply_definition_visuals()
-	set_logical_size(logical_size_px)
+	set_sizes(logical_size_px, display_base_size_px)
 
 
 func get_organ() -> OrganInstance:
@@ -63,12 +76,50 @@ func set_logical_size(logical_size_px: Vector2) -> void:
 		maxf(logical_size_px.y, 8.0)
 	)
 
+	if _display_base_size_px == Vector2.ZERO:
+		_display_base_size_px = _logical_size_px
+
+	_refresh_visual_size()
+	_apply_layout()
+
+
+func set_display_base_size(display_base_size_px: Vector2) -> void:
+	_display_base_size_px = Vector2(
+		maxf(display_base_size_px.x, 8.0),
+		maxf(display_base_size_px.y, 8.0)
+	)
+
+	_refresh_visual_size()
+	_apply_layout()
+
+
+func set_sizes(
+	logical_size_px: Vector2,
+	display_base_size_px: Vector2
+) -> void:
+	_logical_size_px = Vector2(
+		maxf(logical_size_px.x, 8.0),
+		maxf(logical_size_px.y, 8.0)
+	)
+
+	if display_base_size_px == Vector2.ZERO:
+		_display_base_size_px = _logical_size_px
+	else:
+		_display_base_size_px = Vector2(
+			maxf(display_base_size_px.x, 8.0),
+			maxf(display_base_size_px.y, 8.0)
+		)
+
 	_refresh_visual_size()
 	_apply_layout()
 
 
 func get_logical_size() -> Vector2:
 	return _logical_size_px
+
+
+func get_display_base_size() -> Vector2:
+	return _display_base_size_px
 
 
 func get_visual_size() -> Vector2:
@@ -79,9 +130,10 @@ func snap_to_global_center_position(
 	global_center_position: Vector2,
 	rotation_radians: float = 0.0
 ) -> void:
-	_kill_tween(_move_tween)
+	_kill_tween(_position_tween)
+	_kill_tween(_rotation_tween)
 
-	global_position = global_center_position - size * 0.5
+	global_position = global_center_position
 	rotation = rotation_radians
 
 
@@ -89,31 +141,75 @@ func snap_to_overlay_position(
 	overlay_center_position: Vector2,
 	rotation_radians: float = 0.0
 ) -> void:
-	_kill_tween(_move_tween)
+	_kill_tween(_position_tween)
+	_kill_tween(_rotation_tween)
 
-	position = overlay_center_position - size * 0.5
+	position = overlay_center_position
 	rotation = rotation_radians
+
+
+func snap_position_to_overlay_center(
+	overlay_center_position: Vector2
+) -> void:
+	_kill_tween(_position_tween)
+	position = overlay_center_position
+
+
+func snap_rotation_to(rotation_radians: float) -> void:
+	_kill_tween(_rotation_tween)
+	rotation = rotation_radians
+
+
+func tween_rotation_to(rotation_radians: float) -> void:
+	_kill_tween(_rotation_tween)
+
+	_rotation_from = rotation
+	_rotation_to = rotation_radians
+
+	var duration_sec: float = _get_move_duration_sec()
+
+	_rotation_tween = create_tween()
+	_rotation_tween.set_trans(Tween.TRANS_CUBIC)
+	_rotation_tween.set_ease(Tween.EASE_OUT)
+	_rotation_tween.tween_method(
+		_apply_rotation_tween_sample,
+		0.0,
+		1.0,
+		duration_sec
+	)
 
 
 func tween_to_overlay_position(
 	overlay_center_position: Vector2,
 	rotation_radians: float = 0.0
 ) -> void:
-	_kill_tween(_move_tween)
+	_kill_tween(_position_tween)
+	_kill_tween(_rotation_tween)
 
-	var target_position: Vector2 = overlay_center_position - size * 0.5
 	var duration_sec: float = _get_move_duration_sec()
 
-	_move_tween = create_tween()
-	_move_tween.set_parallel(true)
-	_move_tween.set_trans(Tween.TRANS_CUBIC)
-	_move_tween.set_ease(Tween.EASE_OUT)
-	_move_tween.tween_property(self, "position", target_position, duration_sec)
-	_move_tween.tween_property(self, "rotation", rotation_radians, duration_sec)
+	_position_tween = create_tween()
+	_position_tween.set_trans(Tween.TRANS_CUBIC)
+	_position_tween.set_ease(Tween.EASE_OUT)
+	_position_tween.tween_property(
+		self,
+		"position",
+		overlay_center_position,
+		duration_sec
+	)
 
+	_rotation_from = rotation
+	_rotation_to = rotation_radians
 
-func snap_to_local_rect_center() -> void:
-	snap_to_overlay_position(size * 0.5)
+	_rotation_tween = create_tween()
+	_rotation_tween.set_trans(Tween.TRANS_CUBIC)
+	_rotation_tween.set_ease(Tween.EASE_OUT)
+	_rotation_tween.tween_method(
+		_apply_rotation_tween_sample,
+		0.0,
+		1.0,
+		duration_sec
+	)
 
 
 func play_hover_enter() -> void:
@@ -143,7 +239,7 @@ func play_click_shake() -> void:
 	if visual_definition == null:
 		return
 
-	_play_icon_shake(
+	_play_sprite_shake(
 		visual_definition.click_shake_offset_px,
 		visual_definition.click_shake_secondary_offset_px,
 		deg_to_rad(visual_definition.click_shake_axis_deg),
@@ -166,7 +262,7 @@ func play_insert_shake() -> void:
 	if visual_definition == null:
 		return
 
-	_play_icon_shake(
+	_play_sprite_shake(
 		visual_definition.insert_shake_offset_px,
 		visual_definition.insert_shake_secondary_offset_px,
 		deg_to_rad(visual_definition.insert_shake_axis_deg),
@@ -178,14 +274,62 @@ func play_insert_shake() -> void:
 	)
 
 
+func play_rotate_feedback(direction: int) -> void:
+	if not is_instance_valid(_sprite):
+		return
+
+	var signed_direction: float = sign(float(direction))
+	if is_zero_approx(signed_direction):
+		signed_direction = 1.0
+
+	_kill_tween(_sprite_rotation_tween)
+	_sprite.rotation = 0.0
+
+	_sprite_rotation_tween = create_tween()
+	_sprite_rotation_tween.set_trans(Tween.TRANS_CUBIC)
+	_sprite_rotation_tween.set_ease(Tween.EASE_OUT)
+	_sprite_rotation_tween.tween_property(
+		_sprite,
+		"rotation",
+		deg_to_rad(5.0) * signed_direction,
+		0.045
+	)
+	_sprite_rotation_tween.tween_property(
+		_sprite,
+		"rotation",
+		0.0,
+		0.065
+	)
+
+	_play_sprite_shake(
+		2.5,
+		0.8,
+		0.0 if signed_direction > 0.0 else PI,
+		PI * 0.5,
+		18.0,
+		28.0,
+		deg_to_rad(1.5) * signed_direction,
+		0.08
+	)
+
+
+func _apply_rotation_tween_sample(weight: float) -> void:
+	rotation = lerp_angle(_rotation_from, _rotation_to, weight)
+
+
 func _apply_definition_visuals() -> void:
+	if not is_instance_valid(_sprite):
+		return
+
 	if _organ == null or _organ.definition == null:
-		_icon.texture = null
-		_icon.modulate = Color.WHITE
+		_sprite.sprite_frames = null
+		_sprite.modulate = Color.WHITE
+		_sprite.stop()
 		return
 
 	var definition: OrganDefinition = _organ.definition
 	var organ_color: Color = definition.grid_tint
+
 	if organ_color.a <= 0.01:
 		organ_color.a = 1.0
 
@@ -193,8 +337,68 @@ func _apply_definition_visuals() -> void:
 		if definition.visual_definition.tint.a > 0.01:
 			organ_color *= definition.visual_definition.tint
 
-	_icon.texture = definition.get_icon()
-	_icon.modulate = organ_color
+	_apply_sprite_source()
+	_sprite.modulate = organ_color
+	_refresh_visual_size()
+	_apply_layout()
+
+
+func _apply_sprite_source() -> void:
+	if _organ == null or _organ.definition == null:
+		_sprite.sprite_frames = null
+		_sprite.stop()
+		return
+
+	var visual_definition: OrganVisualDefinition = (
+		_organ.definition.visual_definition
+	)
+
+	if visual_definition == null:
+		_sprite.sprite_frames = null
+		_sprite.stop()
+		return
+
+	if visual_definition.sprite_frames != null:
+		_sprite.sprite_frames = visual_definition.sprite_frames
+
+		if visual_definition.sprite_frames.has_animation(DEFAULT_ANIMATION):
+			_sprite.animation = DEFAULT_ANIMATION
+		else:
+			var animation_names: PackedStringArray = (
+				visual_definition.sprite_frames.get_animation_names()
+			)
+
+			if animation_names.is_empty():
+				_sprite.sprite_frames = null
+				_sprite.stop()
+				return
+
+			_sprite.animation = StringName(animation_names[0])
+
+		_sprite.frame = 0
+
+		if visual_definition.autoplay:
+			_sprite.play()
+		else:
+			_sprite.stop()
+
+		return
+
+	var icon: Texture2D = visual_definition.icon
+	if icon == null:
+		_sprite.sprite_frames = null
+		_sprite.stop()
+		return
+
+	var frames: SpriteFrames = SpriteFrames.new()
+	if not frames.has_animation(DEFAULT_ANIMATION):
+		frames.add_animation(DEFAULT_ANIMATION)
+	frames.add_frame(DEFAULT_ANIMATION, icon)
+
+	_sprite.sprite_frames = frames
+	_sprite.animation = DEFAULT_ANIMATION
+	_sprite.frame = 0
+	_sprite.stop()
 
 
 func _refresh_visual_size() -> void:
@@ -203,35 +407,64 @@ func _refresh_visual_size() -> void:
 	if _organ != null and _organ.definition != null:
 		scale_value *= _organ.definition.get_visual_scale()
 
-	_visual_size_px = _logical_size_px * scale_value
+	_visual_size_px = _display_base_size_px * scale_value
 
 
 func _apply_layout() -> void:
-	size = _logical_size_px
-	custom_minimum_size = _logical_size_px
-	pivot_offset = size * 0.5
-
-	if not is_instance_valid(_icon):
+	if not is_instance_valid(_pivot) or not is_instance_valid(_sprite):
 		return
 
-	_icon.custom_minimum_size = Vector2.ZERO
-	_icon.anchor_left = 0.0
-	_icon.anchor_top = 0.0
-	_icon.anchor_right = 0.0
-	_icon.anchor_bottom = 0.0
+	_pivot.position = Vector2.ZERO
+	_pivot.rotation = 0.0
 
-	_icon.size = _visual_size_px
-	_icon.position = (size - _visual_size_px) * 0.5
-	_icon.pivot_offset = _icon.size * 0.5
-	_icon.rotation = 0.0
+	var texture_size: Vector2 = _get_source_texture_size()
 
-	_icon_rest_position = _icon.position
-	_icon_rest_rotation = _icon.rotation
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		_sprite.scale = Vector2.ONE
+		_sprite.position = Vector2.ZERO
+		_sprite.centered = true
+		_sprite.rotation = 0.0
+		_sprite_rest_position = Vector2.ZERO
+		_sprite_rest_rotation = 0.0
+		return
 
-	_icon.offset_left = _icon.position.x
-	_icon.offset_top = _icon.position.y
-	_icon.offset_right = _icon.position.x + _icon.size.x
-	_icon.offset_bottom = _icon.position.y + _icon.size.y
+	var uniform_scale_x: float = _visual_size_px.x / texture_size.x
+	var uniform_scale_y: float = _visual_size_px.y / texture_size.y
+	var uniform_scale: float = minf(uniform_scale_x, uniform_scale_y)
+
+	_sprite.scale = Vector2.ONE * uniform_scale
+	_sprite.position = Vector2.ZERO
+	_sprite.centered = true
+	_sprite.rotation = 0.0
+
+	_sprite_rest_position = Vector2.ZERO
+	_sprite_rest_rotation = 0.0
+
+
+func _get_source_texture_size() -> Vector2:
+	if not is_instance_valid(_sprite):
+		return Vector2.ONE
+
+	if _sprite.sprite_frames == null:
+		return Vector2.ONE
+
+	if not _sprite.sprite_frames.has_animation(_sprite.animation):
+		return Vector2.ONE
+
+	var frame_count: int = _sprite.sprite_frames.get_frame_count(_sprite.animation)
+	if frame_count <= 0:
+		return Vector2.ONE
+
+	var frame_index: int = clampi(_sprite.frame, 0, frame_count - 1)
+	var current_texture: Texture2D = _sprite.sprite_frames.get_frame_texture(
+		_sprite.animation,
+		frame_index
+	)
+
+	if current_texture == null:
+		return Vector2.ONE
+
+	return current_texture.get_size()
 
 
 func _play_hover_scale() -> void:
@@ -256,10 +489,15 @@ func _play_hover_scale() -> void:
 	_scale_tween = create_tween()
 	_scale_tween.set_trans(Tween.TRANS_QUAD)
 	_scale_tween.set_ease(Tween.EASE_OUT)
-	_scale_tween.tween_property(self, "scale", target_scale, duration_sec)
+	_scale_tween.tween_property(
+		_pivot,
+		"scale",
+		target_scale,
+		duration_sec
+	)
 
 
-func _play_icon_shake(
+func _play_sprite_shake(
 	primary_offset_px: float,
 	secondary_offset_px: float,
 	primary_axis_radians: float,
@@ -269,11 +507,13 @@ func _play_icon_shake(
 	rotation_radians: float,
 	duration_sec: float
 ) -> void:
-	if not is_instance_valid(_icon):
+	if not is_instance_valid(_sprite):
 		return
 
 	_kill_tween(_shake_tween)
-	_reset_icon_shake_state()
+
+	_sprite.position = _sprite_rest_position
+	_sprite.rotation = _sprite_rest_rotation
 
 	_shake_primary_offset_px = primary_offset_px
 	_shake_secondary_offset_px = secondary_offset_px
@@ -293,18 +533,18 @@ func _play_icon_shake(
 	):
 		return
 
-	_shake_tween = create_tween()
+	_shake_tween = create_tween().bind_node(self)
 	_shake_tween.tween_method(
 		_apply_shake_sample,
 		0.0,
 		1.0,
 		duration_sec
 	)
-	_shake_tween.finished.connect(_reset_icon_shake_state)
+	_shake_tween.finished.connect(_reset_sprite_shake_state, CONNECT_ONE_SHOT)
 
 
 func _apply_shake_sample(progress: float) -> void:
-	if not is_instance_valid(_icon):
+	if not is_instance_valid(_sprite):
 		return
 
 	var envelope: float = 1.0 - progress
@@ -319,18 +559,18 @@ func _apply_shake_sample(progress: float) -> void:
 		+ _shake_secondary_axis * _shake_secondary_offset_px * secondary_wave
 	) * envelope
 
-	_icon.position = _icon_rest_position + offset
-	_icon.rotation = _icon_rest_rotation + (
+	_sprite.position = _sprite_rest_position + offset
+	_sprite.rotation = _sprite_rest_rotation + (
 		_shake_rotation_radians * primary_wave * envelope
 	)
 
 
-func _reset_icon_shake_state() -> void:
-	if not is_instance_valid(_icon):
+func _reset_sprite_shake_state() -> void:
+	if not is_instance_valid(_sprite):
 		return
 
-	_icon.position = _icon_rest_position
-	_icon.rotation = _icon_rest_rotation
+	_sprite.position = _sprite_rest_position
+	_sprite.rotation = _sprite_rest_rotation
 
 
 func _get_move_duration_sec() -> float:
@@ -345,6 +585,15 @@ func _get_move_duration_sec() -> float:
 		return 0.12
 
 	return visual_definition.move_duration_sec
+
+
+func stop_all_motion() -> void:
+	_kill_tween(_position_tween)
+	_kill_tween(_rotation_tween)
+	_kill_tween(_scale_tween)
+	_kill_tween(_shake_tween)
+	_kill_tween(_sprite_rotation_tween)
+	_reset_sprite_shake_state()
 
 
 func _kill_tween(tween: Tween) -> void:
