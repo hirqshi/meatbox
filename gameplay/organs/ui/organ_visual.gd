@@ -1,6 +1,8 @@
 class_name OrganVisual
 extends Node2D
 
+const DEBUG_DRAG_GHOST: bool = true
+
 const DEFAULT_ANIMATION: StringName = &"default"
 
 @export_range(0.1, 8.0, 0.01)
@@ -593,6 +595,8 @@ func stop_all_motion() -> void:
 	_kill_tween(_scale_tween)
 	_kill_tween(_shake_tween)
 	_kill_tween(_sprite_rotation_tween)
+
+	_pivot.scale = Vector2.ONE
 	_reset_sprite_shake_state()
 
 

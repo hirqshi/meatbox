@@ -24,6 +24,9 @@ var _drag_grab_offset_from_center: Vector2 = Vector2.ZERO
 
 var _drag_anchor_cell_base_local: Vector2i = Vector2i.ZERO
 
+var _is_waiting_for_pile_teleport: bool = false
+var _pending_pile_visual_center: Vector2 = Vector2.ZERO
+
 
 func setup(
 	inventory: OrganInventoryComponent,
@@ -61,6 +64,11 @@ func _process(delta: float) -> void:
 		return
 
 	if _is_finishing_drag:
+		if _is_waiting_for_pile_teleport and _drag_organ != null:
+			_visual_manager.update_drag_visual_at(
+				_pending_pile_visual_center,
+				_drag_organ.get_rotation_radians()
+			)
 		return
 
 	var pointer_viewport_position: Vector2 = get_viewport().get_mouse_position()
@@ -128,6 +136,8 @@ func _begin_drag(
 
 	_is_dragging = true
 	_is_finishing_drag = false
+	_is_waiting_for_pile_teleport = false
+	_pending_pile_visual_center = Vector2.ZERO
 	_drag_organ = organ
 	_drag_source_type = source_type
 	_pointer_viewport_position = pointer_viewport_position
@@ -301,13 +311,26 @@ func _commit_to_pile(
 					organ_center_viewport_position
 				)
 
+				_pending_pile_visual_center = (
+					organ_center_viewport_position
+				)
+				_is_waiting_for_pile_teleport = true
+
+				_visual_manager.update_drag_visual_at(
+					_pending_pile_visual_center,
+					organ.get_rotation_radians()
+				)
+
 				await _pile.restore_loose_organ_at_viewport_position_and_wait(
 					organ,
 					organ_center_viewport_position,
 					_last_drag_velocity
 				)
 
-				_visual_manager.snap_organ_to_current_target(organ)
+				_is_waiting_for_pile_teleport = false
+
+				if is_instance_valid(self):
+					_visual_manager.snap_organ_to_current_target(organ)
 			else:
 				_grid_view.set_organ_visible(organ, true)
 
@@ -315,12 +338,26 @@ func _commit_to_pile(
 			_visual_manager.end_visual_sync_suspension()
 
 		DragSourceType.PILE:
+			_pending_pile_visual_center = (
+				organ_center_viewport_position
+			)
+			_is_waiting_for_pile_teleport = true
+
+			_visual_manager.update_drag_visual_at(
+				_pending_pile_visual_center,
+				organ.get_rotation_radians()
+			)
+
 			await _pile.restore_loose_organ_at_viewport_position_and_wait(
 				organ,
 				organ_center_viewport_position,
 				_last_drag_velocity
 			)
-			_visual_manager.snap_organ_to_current_target(organ)
+
+			_is_waiting_for_pile_teleport = false
+
+			if is_instance_valid(self):
+				_visual_manager.snap_organ_to_current_target(organ)
 
 
 func _commit_to_world(
@@ -352,6 +389,8 @@ func _reset_drag() -> void:
 
 	_is_dragging = false
 	_is_finishing_drag = false
+	_is_waiting_for_pile_teleport = false
+	_pending_pile_visual_center = Vector2.ZERO
 	_drag_organ = null
 	_drag_source_type = DragSourceType.GRID
 	_pointer_viewport_position = Vector2.ZERO

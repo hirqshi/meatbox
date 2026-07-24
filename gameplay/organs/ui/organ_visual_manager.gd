@@ -58,6 +58,20 @@ func setup(
 	if not _inventory.loose_organ_removed.is_connected(_on_state_changed):
 		_inventory.loose_organ_removed.connect(_on_state_changed)
 
+	if not _pile.organ_hover_started.is_connected(
+		_on_pile_organ_hover_started
+	):
+		_pile.organ_hover_started.connect(
+			_on_pile_organ_hover_started
+		)
+
+	if not _pile.organ_hover_ended.is_connected(
+		_on_pile_organ_hover_ended
+	):
+		_pile.organ_hover_ended.connect(
+			_on_pile_organ_hover_ended
+		)
+
 	_apply_presentation_settings_to_dependencies()
 	_refresh_visuals()
 	_sync_visual_targets(true)
@@ -163,6 +177,33 @@ func update_drag_visual(
 	)
 
 
+func update_drag_visual_at(
+	viewport_position: Vector2,
+	rotation_radians: float
+) -> void:
+	if _dragged_organ == null:
+		return
+
+	var visual: OrganVisual = _visuals_by_organ.get(_dragged_organ)
+	if not is_instance_valid(visual):
+		return
+
+	var drag_scale: float = presentation_settings.global_icon_scale
+	drag_scale *= presentation_settings.drag_proxy_scale_multiplier
+
+	visual.visible = true
+	visual.z_index = presentation_settings.drag_visual_z_index
+	visual.set_global_icon_scale(drag_scale)
+	visual.set_sizes(
+		_get_drag_visual_logical_size_px(_dragged_organ),
+		_get_organ_display_base_size_px(_dragged_organ)
+	)
+	visual.snap_to_overlay_position(
+		viewport_to_overlay_local(viewport_position),
+		rotation_radians
+	)
+
+
 func get_drag_visual_viewport_center() -> Vector2:
 	if _dragged_organ == null:
 		return Vector2.ZERO
@@ -222,6 +263,9 @@ func _process(_delta: float) -> void:
 	if _is_releasing_drag_visual:
 		return
 
+	if _suspend_sync_counter > 0:
+		return
+
 	_sync_visual_targets(false)
 
 
@@ -261,13 +305,21 @@ func _ensure_visual(organ: OrganInstance) -> void:
 
 	if _visuals_by_organ.has(organ):
 		var existing_visual: OrganVisual = _visuals_by_organ.get(organ)
-		if is_instance_valid(existing_visual):
+
+		if not is_instance_valid(existing_visual):
+			_visuals_by_organ.erase(organ)
+		else:
 			existing_visual.set_sizes(
 				_get_organ_logical_size_px(organ),
 				_get_organ_display_base_size_px(organ)
 			)
-			existing_visual.z_index = presentation_settings.installed_visual_z_index
-		return
+
+			if organ != _dragged_organ:
+				existing_visual.z_index = (
+					presentation_settings.installed_visual_z_index
+				)
+
+			return
 
 	var visual: OrganVisual = organ_visual_scene.instantiate() as OrganVisual
 	if visual == null:
@@ -275,7 +327,10 @@ func _ensure_visual(organ: OrganInstance) -> void:
 		return
 
 	drag_overlay.add_child(visual)
-	visual.set_global_icon_scale(presentation_settings.global_icon_scale)
+
+	visual.set_global_icon_scale(
+		presentation_settings.global_icon_scale
+	)
 	visual.setup(
 		organ,
 		_get_organ_logical_size_px(organ),
@@ -289,6 +344,9 @@ func _ensure_visual(organ: OrganInstance) -> void:
 
 func _sync_visual_targets(force_snap: bool = false) -> void:
 	if _inventory == null:
+		return
+
+	if _suspend_sync_counter > 0:
 		return
 
 	for organ: OrganInstance in _visuals_by_organ:
@@ -310,7 +368,9 @@ func _sync_single_visual_target(
 	if _inventory.is_organ_installed(organ):
 		visual.visible = true
 		visual.z_index = presentation_settings.installed_visual_z_index
-		visual.set_global_icon_scale(presentation_settings.global_icon_scale)
+		visual.set_global_icon_scale(
+			presentation_settings.global_icon_scale
+		)
 		visual.set_sizes(
 			_get_organ_logical_size_px(organ),
 			_get_organ_display_base_size_px(organ)
@@ -333,6 +393,7 @@ func _sync_single_visual_target(
 				installed_overlay_position,
 				installed_rotation
 			)
+
 		return
 
 	if _pile.has_loose_organ(organ):
@@ -343,26 +404,34 @@ func _sync_single_visual_target(
 			_pile.try_get_body_rotation(organ)
 		)
 
-		if pile_canvas_center_variant == null or pile_rotation_variant == null:
+		if (
+			pile_canvas_center_variant == null
+			or pile_rotation_variant == null
+		):
 			return
+
+		var pile_canvas_center: Vector2 = (
+			pile_canvas_center_variant as Vector2
+		)
+		var pile_rotation: float = pile_rotation_variant as float
+		var pile_overlay_position: Vector2 = (
+			canvas_to_overlay_local(pile_canvas_center)
+		)
 
 		visual.visible = true
 		visual.z_index = presentation_settings.installed_visual_z_index
-		visual.set_global_icon_scale(presentation_settings.global_icon_scale)
+		visual.set_global_icon_scale(
+			presentation_settings.global_icon_scale
+		)
 		visual.set_sizes(
 			_get_drag_visual_logical_size_px(organ),
 			_get_organ_display_base_size_px(organ)
 		)
-
-		var pile_overlay_position: Vector2 = (
-			canvas_to_overlay_local(pile_canvas_center_variant as Vector2)
-		)
-		var pile_rotation: float = pile_rotation_variant as float
-
 		visual.snap_to_overlay_position(
 			pile_overlay_position,
 			pile_rotation
 		)
+
 		return
 
 	visual.visible = false
@@ -464,6 +533,14 @@ func _on_state_changed(changed_organ: OrganInstance = null) -> void:
 		return
 
 	_sync_visual_targets(true)
+
+
+func _on_pile_organ_hover_started(organ: OrganInstance) -> void:
+	play_hover_enter_for(organ)
+
+
+func _on_pile_organ_hover_ended(organ: OrganInstance) -> void:
+	play_hover_exit_for(organ)
 
 
 func play_hover_enter_for(organ: OrganInstance) -> void:

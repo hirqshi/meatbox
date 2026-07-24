@@ -89,19 +89,19 @@ func get_logical_size() -> Vector2:
 
 
 func teleport_and_release(
-	target_position: Vector2,
-	target_rotation_radians: float,
+	target_global_position: Vector2,
+	target_global_rotation_radians: float,
 	release_linear_velocity: Vector2,
 	release_angular_velocity: float
 ) -> void:
-	_pending_global_position = target_position
-	_pending_rotation = target_rotation_radians
+	_pending_global_position = target_global_position
+	_pending_rotation = target_global_rotation_radians
 	_pending_linear_velocity = release_linear_velocity
 	_pending_angular_velocity = release_angular_velocity
 	_has_pending_teleport = true
 
-	position = target_position
-	rotation = target_rotation_radians
+	global_position = target_global_position
+	global_rotation = target_global_rotation_radians
 	linear_velocity = Vector2.ZERO
 	angular_velocity = 0.0
 	sleeping = false
@@ -112,7 +112,10 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if not _has_pending_teleport:
 		return
 
-	state.transform = Transform2D(_pending_rotation, _pending_global_position)
+	state.transform = Transform2D(
+		_pending_rotation,
+		_pending_global_position
+	)
 	state.linear_velocity = _pending_linear_velocity
 	state.angular_velocity = _pending_angular_velocity
 	state.sleeping = false

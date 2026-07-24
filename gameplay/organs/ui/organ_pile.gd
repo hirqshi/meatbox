@@ -4,7 +4,11 @@ extends Control
 const PILE_COLLISION_LAYER: int = 2
 const WALL_THICKNESS_PX: float = 24.0
 
+const DEBUG_DRAG_GHOST: bool = true
+
 signal organ_drag_requested(organ: OrganInstance)
+signal organ_hover_started(organ: OrganInstance)
+signal organ_hover_ended(organ: OrganInstance)
 
 @export_category("Scenes")
 @export var organ_pile_body_scene: PackedScene
@@ -23,6 +27,7 @@ var _grid_view: OrganGridView
 var _bodies_by_organ: Dictionary[OrganInstance, OrganPileBody] = {}
 var _random: RandomNumberGenerator = RandomNumberGenerator.new()
 var _suppress_auto_add_counter: int = 0
+var _hovered_body: OrganPileBody
 
 
 func _ready() -> void:
@@ -88,6 +93,9 @@ func set_body_active(
 		body.freeze = false
 		body.sleeping = false
 	else:
+		if _hovered_body == body:
+			_set_hovered_body(null)
+
 		body.collision_layer = 0
 		body.collision_mask = 0
 		body.linear_velocity = Vector2.ZERO
@@ -136,9 +144,12 @@ func restore_loose_organ_at_viewport_position_and_wait(
 	var pile_local_position: Vector2 = viewport_to_local_position(
 		organ_center_viewport_position
 	)
-	var items_local_position: Vector2 = pile_local_position - _items.position
+	var items_local_position: Vector2 = (
+		pile_local_position - _items.position
+	)
 	var body_global_position: Vector2 = (
-		get_global_transform_with_canvas() * items_local_position
+		_items.get_global_transform_with_canvas()
+		* items_local_position
 	)
 
 	set_body_active(organ, true)
@@ -270,6 +281,10 @@ func _add_body(
 		return
 
 	body.visible = false
+	body.freeze = true
+	body.collision_layer = 0
+	body.collision_mask = 0
+
 	_items.add_child(body)
 
 	body.setup(
@@ -280,22 +295,33 @@ func _add_body(
 		global_collision_scale
 	)
 
-	body.collision_layer = PILE_COLLISION_LAYER
-	body.collision_mask = PILE_COLLISION_LAYER
-
 	if initial_position == Vector2.INF:
 		body.position = _get_spawn_position(organ)
 	else:
 		body.position = initial_position
 
 	body.rotation = initial_rotation
+
+	body.collision_layer = PILE_COLLISION_LAYER
+	body.collision_mask = PILE_COLLISION_LAYER
 	body.visible = true
+	
+	body.mouse_entered.connect(
+		_on_body_mouse_entered.bind(organ)
+	)
+	body.mouse_exited.connect(
+		_on_body_mouse_exited.bind(organ)
+	)
+	
 	_bodies_by_organ[organ] = body
 
 
 func _remove_body(organ: OrganInstance) -> void:
 	var body: OrganPileBody = _bodies_by_organ.get(organ)
-
+	
+	if _hovered_body == body:
+		_set_hovered_body(null)
+		
 	if is_instance_valid(body):
 		body.queue_free()
 
@@ -507,11 +533,60 @@ func try_get_body_rotation(
 	return body.rotation
 
 
+func _on_body_mouse_entered(organ: OrganInstance) -> void:
+	if organ == null:
+		return
+
+	var body: OrganPileBody = _bodies_by_organ.get(organ)
+	if not is_instance_valid(body):
+		return
+
+	if not body.visible or not body.input_pickable:
+		return
+
+	organ_hover_started.emit(organ)
+
+
+func _on_body_mouse_exited(organ: OrganInstance) -> void:
+	if organ == null:
+		return
+
+	organ_hover_ended.emit(organ)
+
+
+func _set_hovered_body(next_body: OrganPileBody) -> void:
+	if _hovered_body == next_body:
+		return
+
+	var previous_body: OrganPileBody = _hovered_body
+	_hovered_body = next_body
+
+	if is_instance_valid(previous_body):
+		organ_hover_ended.emit(previous_body.get_organ())
+
+	if is_instance_valid(_hovered_body):
+		organ_hover_started.emit(_hovered_body.get_organ())
+
+
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		var mouse_motion: InputEventMouseMotion = (
+			event as InputEventMouseMotion
+		)
+
+		var hovered_body: OrganPileBody = (
+			_try_pick_body_at_local_point(mouse_motion.position)
+		)
+
+		_set_hovered_body(hovered_body)
+		return
+
 	if event is not InputEventMouseButton:
 		return
 
-	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
+	var mouse_button: InputEventMouseButton = (
+		event as InputEventMouseButton
+	)
 
 	if mouse_button.button_index != MOUSE_BUTTON_LEFT:
 		return
@@ -526,5 +601,6 @@ func _gui_input(event: InputEvent) -> void:
 	if picked_body == null:
 		return
 
+	_set_hovered_body(null)
 	organ_drag_requested.emit(picked_body.get_organ())
 	accept_event()
